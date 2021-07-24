@@ -15,6 +15,46 @@
 #include "log.h"
 #include "region.h"
 
+#if 1 // old xcb
+/**
+ * @brief xcb_render_create_picture_value_list_t
+ **/
+typedef struct xcb_render_create_picture_value_list_t {
+    uint32_t             repeat;
+    xcb_render_picture_t alphamap;
+    int32_t              alphaxorigin;
+    int32_t              alphayorigin;
+    int32_t              clipxorigin;
+    int32_t              clipyorigin;
+    xcb_pixmap_t         clipmask;
+    uint32_t             graphicsexposure;
+    uint32_t             subwindowmode;
+    uint32_t             polyedge;
+    uint32_t             polymode;
+    xcb_atom_t           dither;
+    uint32_t             componentalpha;
+} xcb_render_create_picture_value_list_t;
+
+/**
+ * @brief xcb_render_change_picture_value_list_t
+ **/
+typedef struct xcb_render_change_picture_value_list_t {
+    uint32_t             repeat;
+    xcb_render_picture_t alphamap;
+    int32_t              alphaxorigin;
+    int32_t              alphayorigin;
+    int32_t              clipxorigin;
+    int32_t              clipyorigin;
+    xcb_pixmap_t         clipmask;
+    uint32_t             graphicsexposure;
+    uint32_t             subwindowmode;
+    uint32_t             polyedge;
+    uint32_t             polymode;
+    xcb_atom_t           dither;
+    uint32_t             componentalpha;
+} xcb_render_change_picture_value_list_t;
+#endif
+
 typedef struct session session_t;
 
 /// Structure representing Window property value.

@@ -16,7 +16,7 @@ cflags = []
 
 required_xcb_packages = [
 	'xcb-render', 'xcb-damage', 'xcb-randr', 'xcb-sync', 'xcb-composite',
-	'xcb-shape', 'xcb-xinerama', 'xcb-xfixes', 'xcb-present', 'xcb-glx', 'xcb'
+	'xcb-shape', 'xcb-xinerama', 'xcb-xfixes', 'xcb-glx', 'xcb'
 ]
 
 required_packages = [
@@ -28,7 +28,7 @@ foreach i : required_packages
 endforeach
 
 foreach i : required_xcb_packages
-	base_deps += [dependency(i, version: '>=1.12.0', required: true)]
+	base_deps += [dependency(i, version: '>=1.8.0', required: true)]
 endforeach
 
 if not cc.has_header('uthash.h')

@@ -6,7 +6,9 @@
 #include <string.h>
 
 #include <xcb/composite.h>
+#if 0 // present extension
 #include <xcb/present.h>
+#endif
 #include <xcb/render.h>
 #include <xcb/sync.h>
 #include <xcb/xcb.h>
@@ -60,7 +62,9 @@ typedef struct _xrender_data {
 	/// Width and height of the target pixmap
 	int target_width, target_height;
 
+#if 0 // present extension
 	xcb_special_event_t *present_event;
+#endif
 } xrender_data;
 
 struct _xrender_blur_context {
@@ -297,9 +301,11 @@ static void deinit(backend_t *backend_data) {
 		xcb_render_free_picture(xd->base.c, xd->back[i]);
 		xcb_free_pixmap(xd->base.c, xd->back_pixmap[i]);
 	}
+#if 0 // present extension
 	if (xd->present_event) {
 		xcb_unregister_for_special_event(xd->base.c, xd->present_event);
 	}
+#endif
 	xcb_render_free_picture(xd->base.c, xd->white_pixel);
 	xcb_render_free_picture(xd->base.c, xd->black_pixel);
 	free(xd);
@@ -319,6 +325,7 @@ static void present(backend_t *base, const region_t *region) {
 	x_set_picture_clip_region(base->c, xd->back[2], 0, 0, region);
 
 	if (xd->vsync) {
+#if 0 // present extension
 		// Update the back buffer first, then present
 		xcb_render_composite(base->c, XCB_RENDER_PICT_OP_SRC, xd->back[2],
 		                     XCB_NONE, xd->back[xd->curr_back], orig_x, orig_y, 0,
@@ -360,6 +367,7 @@ static void present(backend_t *base, const region_t *region) {
 			xd->curr_back = 1 - xd->curr_back;
 		}
 		free(pev);
+#endif
 	} else {
 		// No vsync needed, draw into the target picture directly
 		xcb_render_composite(base->c, XCB_RENDER_PICT_OP_SRC, xd->back[2],
@@ -586,6 +594,7 @@ backend_t *backend_xrender_init(session_t *ps) {
 
 	xd->vsync = ps->o.vsync;
 	if (ps->present_exists) {
+#if 0 // present extension
 		uint32_t eid = x_new_id(ps->c);
 		xcb_generic_error_t *e =
 		    xcb_request_check(ps->c, xcb_present_select_input_checked(
@@ -604,6 +613,7 @@ backend_t *backend_xrender_init(session_t *ps) {
 			          "disabled");
 			xd->vsync = false;
 		}
+#endif
 	} else {
 		xd->vsync = false;
 	}

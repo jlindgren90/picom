@@ -26,6 +26,161 @@
 #include "utils.h"
 #include "x.h"
 
+#if 1 // old xcb
+#define ALIGNOF(type) offsetof(struct { char dummy; type member; }, member)
+
+int
+xcb_render_create_picture_value_list_serialize (void                                         **_buffer,
+                                                uint32_t                                       value_mask,
+                                                const xcb_render_create_picture_value_list_t  *_aux)
+{
+    char *xcb_out = *_buffer;
+    unsigned int xcb_buffer_len = 0;
+    unsigned int xcb_align_to = 0;
+    unsigned int xcb_padding_offset = 0;
+
+    unsigned int xcb_pad = 0;
+    char xcb_pad0[3] = {0, 0, 0};
+    struct iovec xcb_parts[14];
+    unsigned int xcb_parts_idx = 0;
+    unsigned int xcb_block_len = 0;
+    unsigned int i;
+    char *xcb_tmp;
+
+    if(value_mask & XCB_RENDER_CP_REPEAT) {
+        /* xcb_render_create_picture_value_list_t.repeat */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->repeat;
+        xcb_block_len += sizeof(uint32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(uint32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(uint32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_ALPHA_MAP) {
+        /* xcb_render_create_picture_value_list_t.alphamap */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->alphamap;
+        xcb_block_len += sizeof(xcb_render_picture_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(xcb_render_picture_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(xcb_render_picture_t);
+    }
+    if(value_mask & XCB_RENDER_CP_ALPHA_X_ORIGIN) {
+        /* xcb_render_create_picture_value_list_t.alphaxorigin */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->alphaxorigin;
+        xcb_block_len += sizeof(int32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(int32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(int32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_ALPHA_Y_ORIGIN) {
+        /* xcb_render_create_picture_value_list_t.alphayorigin */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->alphayorigin;
+        xcb_block_len += sizeof(int32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(int32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(int32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_CLIP_X_ORIGIN) {
+        /* xcb_render_create_picture_value_list_t.clipxorigin */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->clipxorigin;
+        xcb_block_len += sizeof(int32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(int32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(int32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_CLIP_Y_ORIGIN) {
+        /* xcb_render_create_picture_value_list_t.clipyorigin */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->clipyorigin;
+        xcb_block_len += sizeof(int32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(int32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(int32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_CLIP_MASK) {
+        /* xcb_render_create_picture_value_list_t.clipmask */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->clipmask;
+        xcb_block_len += sizeof(xcb_pixmap_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(xcb_pixmap_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(xcb_pixmap_t);
+    }
+    if(value_mask & XCB_RENDER_CP_GRAPHICS_EXPOSURE) {
+        /* xcb_render_create_picture_value_list_t.graphicsexposure */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->graphicsexposure;
+        xcb_block_len += sizeof(uint32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(uint32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(uint32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_SUBWINDOW_MODE) {
+        /* xcb_render_create_picture_value_list_t.subwindowmode */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->subwindowmode;
+        xcb_block_len += sizeof(uint32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(uint32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(uint32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_POLY_EDGE) {
+        /* xcb_render_create_picture_value_list_t.polyedge */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->polyedge;
+        xcb_block_len += sizeof(uint32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(uint32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(uint32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_POLY_MODE) {
+        /* xcb_render_create_picture_value_list_t.polymode */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->polymode;
+        xcb_block_len += sizeof(uint32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(uint32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(uint32_t);
+    }
+    if(value_mask & XCB_RENDER_CP_DITHER) {
+        /* xcb_render_create_picture_value_list_t.dither */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->dither;
+        xcb_block_len += sizeof(xcb_atom_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(xcb_atom_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(xcb_atom_t);
+    }
+    if(value_mask & XCB_RENDER_CP_COMPONENT_ALPHA) {
+        /* xcb_render_create_picture_value_list_t.componentalpha */
+        xcb_parts[xcb_parts_idx].iov_base = (char *) &_aux->componentalpha;
+        xcb_block_len += sizeof(uint32_t);
+        xcb_parts[xcb_parts_idx].iov_len = sizeof(uint32_t);
+        xcb_parts_idx++;
+        xcb_align_to = ALIGNOF(uint32_t);
+    }
+    /* insert padding */
+    xcb_pad = -(xcb_block_len + xcb_padding_offset) & (xcb_align_to - 1);
+    xcb_buffer_len += xcb_block_len + xcb_pad;
+    if (0 != xcb_pad) {
+        xcb_parts[xcb_parts_idx].iov_base = xcb_pad0;
+        xcb_parts[xcb_parts_idx].iov_len = xcb_pad;
+        xcb_parts_idx++;
+        xcb_pad = 0;
+    }
+    xcb_block_len = 0;
+    xcb_padding_offset = 0;
+
+    if (NULL == xcb_out) {
+        /* allocate memory */
+        xcb_out = malloc(xcb_buffer_len);
+        *_buffer = xcb_out;
+    }
+
+    xcb_tmp = xcb_out;
+    for(i=0; i<xcb_parts_idx; i++) {
+        if (0 != xcb_parts[i].iov_base && 0 != xcb_parts[i].iov_len)
+            memcpy(xcb_tmp, xcb_parts[i].iov_base, xcb_parts[i].iov_len);
+        if (0 != xcb_parts[i].iov_len)
+            xcb_tmp += xcb_parts[i].iov_len;
+    }
+
+    return xcb_buffer_len;
+}
+#endif
+
 /**
  * Get a specific attribute of a window.
  *

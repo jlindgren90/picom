@@ -17,6 +17,7 @@ enum driver detect_driver(xcb_connection_t *c, backend_t *backend_data, xcb_wind
 	// First we try doing backend agnostic detection using RANDR
 	// There's no way to query the X server about what driver is loaded, so RANDR is
 	// our best shot.
+#if 0 // old randr
 	xcb_randr_query_version_reply_t *randr_version = xcb_randr_query_version_reply(
 	    c, xcb_randr_query_version(c, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION),
 	    NULL);
@@ -64,6 +65,7 @@ enum driver detect_driver(xcb_connection_t *c, backend_t *backend_data, xcb_wind
 		free(r);
 	}
 	free(randr_version);
+#endif
 
 	// If the backend supports driver detection, use that as well
 	if (backend_data && backend_data->ops->detect_driver) {

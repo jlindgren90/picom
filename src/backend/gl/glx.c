@@ -473,6 +473,7 @@ static void glx_present(backend_t *base, const region_t *region attr_unused) {
 }
 
 static int glx_buffer_age(backend_t *base) {
+#if 0 // old glx
 	if (!glxext.has_GLX_EXT_buffer_age) {
 		return -1;
 	}
@@ -481,6 +482,9 @@ static int glx_buffer_age(backend_t *base) {
 	unsigned int val;
 	glXQueryDrawable(gd->display, gd->target_win, GLX_BACK_BUFFER_AGE_EXT, &val);
 	return (int)val ?: -1;
+#else
+	return -1;
+#endif
 }
 
 struct backend_operations glx_ops = {

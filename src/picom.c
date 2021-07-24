@@ -20,7 +20,9 @@
 #include <xcb/composite.h>
 #include <xcb/damage.h>
 #include <xcb/glx.h>
+#if 0 // present extension
 #include <xcb/present.h>
+#endif
 #include <xcb/randr.h>
 #include <xcb/render.h>
 #include <xcb/sync.h>
@@ -1692,7 +1694,9 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	xcb_prefetch_extension_data(ps->c, &xcb_xfixes_id);
 	xcb_prefetch_extension_data(ps->c, &xcb_randr_id);
 	xcb_prefetch_extension_data(ps->c, &xcb_xinerama_id);
+#if 0 // present extension
 	xcb_prefetch_extension_data(ps->c, &xcb_present_id);
+#endif
 	xcb_prefetch_extension_data(ps->c, &xcb_sync_id);
 	xcb_prefetch_extension_data(ps->c, &xcb_glx_id);
 
@@ -1855,6 +1859,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 		ps->randr_error = ext_info->first_error;
 	}
 
+#if 0 // present extension
 	ext_info = xcb_get_extension_data(ps->c, &xcb_present_id);
 	if (ext_info && ext_info->present) {
 		xcb_present_query_version_reply_t *r = xcb_present_query_version_reply(
@@ -1867,6 +1872,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 			free(r);
 		}
 	}
+#endif
 
 	// Query X Sync
 	ext_info = xcb_get_extension_data(ps->c, &xcb_sync_id);

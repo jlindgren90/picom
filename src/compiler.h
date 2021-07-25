@@ -97,12 +97,10 @@
 #define __has_include(x) 0
 #endif
 
-#if !defined(__STDC_NO_THREADS__) && __has_include(<threads.h>)
-# include <threads.h>
+#if defined(__GNUC__) || defined(__clang__)
+# define thread_local __thread
 #elif __STDC_VERSION__ >= 201112L
 # define thread_local _Thread_local
-#elif defined(__GNUC__) || defined(__clang__)
-# define thread_local __thread
 #else
 # define thread_local _Pragma("GCC error \"No thread local storage support\"") __error__
 #endif

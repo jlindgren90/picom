@@ -414,7 +414,7 @@ _x_strerror(unsigned long serial, uint8_t major, uint16_t minor, uint8_t error_c
 #undef CASESTRRET
 #undef CASESTRRET2
 
-	thread_local static char buffer[256];
+	static thread_local char buffer[256];
 	snprintf(buffer, sizeof(buffer), "X error %d %s request %d minor %d serial %lu",
 	         error_code, name, major, minor, serial);
 	return buffer;

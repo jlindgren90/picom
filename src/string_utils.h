@@ -34,21 +34,10 @@ static inline int uitostr(unsigned int n, char *buf) {
 	return ret;
 }
 
-static inline const char *skip_space_const(const char *src) {
+static inline const char *skip_space(const char *src) {
 	if (!src)
 		return NULL;
 	while (*src && isspace(*src))
 		src++;
 	return src;
 }
-
-static inline char *skip_space_mut(char *src) {
-	if (!src)
-		return NULL;
-	while (*src && isspace(*src))
-		src++;
-	return src;
-}
-
-#define skip_space(x)                                                                    \
-	_Generic((x), char * : skip_space_mut, const char * : skip_space_const)(x)

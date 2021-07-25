@@ -665,9 +665,9 @@ static bool xr_blur_dst(session_t *ps, xcb_render_picture_t tgt_buffer, int16_t 
 		    ps->c, src_pict, strlen(XRFILTER_CONVOLUTION), XRFILTER_CONVOLUTION,
 		    (uint32_t)(kwid * khei + 2), convolution_blur);
 		xcb_render_composite(ps->c, XCB_RENDER_PICT_OP_SRC, src_pict, XCB_NONE,
-		                     dst_pict, (rd_from_tgt ? x : 0),
-		                     (rd_from_tgt ? y : 0), 0, 0, (rd_from_tgt ? 0 : x),
-		                     (rd_from_tgt ? 0 : y), wid, hei);
+		                     dst_pict, (int16_t)(rd_from_tgt ? x : 0),
+		                     (int16_t)(rd_from_tgt ? y : 0), 0, 0, (int16_t)(rd_from_tgt ? 0 : x),
+		                     (int16_t)(rd_from_tgt ? 0 : y), wid, hei);
 		xrfilter_reset(ps, src_pict);
 
 		{

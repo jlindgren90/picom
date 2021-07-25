@@ -681,7 +681,7 @@ void win_update_prop_shadow_raw(session_t *ps, struct managed_win *w) {
 	if (!prop.nitems) {
 		w->prop_shadow = -1;
 	} else {
-		w->prop_shadow = *prop.c32;
+		w->prop_shadow = to_int_checked(*prop.c32);
 	}
 
 	free_winprop(&prop);
@@ -2343,7 +2343,7 @@ win_is_fullscreen_xcb(xcb_connection_t *c, const struct atom *a, const xcb_windo
 
 /// Set flags on a window. Some sanity checks are performed
 void win_set_flags(struct managed_win *w, uint64_t flags) {
-	log_debug("Set flags %lu to window %#010x (%s)", flags, w->base.id, w->name);
+	log_debug("Set flags %" PRIu64 " to window %#010x (%s)", flags, w->base.id, w->name);
 	if (unlikely(w->state == WSTATE_DESTROYING)) {
 		log_error("Flags set on a destroyed window %#010x (%s)", w->base.id, w->name);
 		return;
@@ -2354,7 +2354,7 @@ void win_set_flags(struct managed_win *w, uint64_t flags) {
 
 /// Clear flags on a window. Some sanity checks are performed
 void win_clear_flags(struct managed_win *w, uint64_t flags) {
-	log_debug("Clear flags %lu from window %#010x (%s)", flags, w->base.id, w->name);
+	log_debug("Clear flags %" PRIu64 " from window %#010x (%s)", flags, w->base.id, w->name);
 	if (unlikely(w->state == WSTATE_DESTROYING)) {
 		log_warn("Flags cleared on a destroyed window %#010x (%s)", w->base.id,
 		         w->name);

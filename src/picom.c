@@ -99,7 +99,7 @@ const char *const BACKEND_STRS[] = {[BKEND_XRENDER] = "xrender",
 session_t *ps_g = NULL;
 
 void set_root_flags(session_t *ps, uint64_t flags) {
-	log_debug("Setting root flags: %lu", flags);
+	log_debug("Setting root flags: %" PRIu64, flags);
 	ps->root_flags |= flags;
 	ps->pending_updates = true;
 }
@@ -236,7 +236,7 @@ static double fade_timeout(session_t *ps) {
  * @param steps steps of fading
  * @return whether we are still in fading mode
  */
-static bool run_fade(session_t *ps, struct managed_win **_w, long steps) {
+static bool run_fade(session_t *ps, struct managed_win **_w, int64_t steps) {
 	struct managed_win *w = *_w;
 	if (w->state == WSTATE_MAPPED || w->state == WSTATE_UNMAPPED) {
 		// We are not fading
@@ -619,7 +619,7 @@ static struct managed_win *paint_preprocess(session_t *ps, bool *fade_running) {
 	*fade_running = false;
 
 	// Fading step calculation
-	long steps = 0L;
+	int64_t steps = 0L;
 	int64_t now = get_time_ms();
 	if (ps->fade_time) {
 		assert(now >= ps->fade_time);

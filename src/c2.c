@@ -1299,7 +1299,7 @@ static inline void c2_match_once_leaf(session_t *ps, const struct managed_win *w
 	switch (pleaf->ptntype) {
 	// Deal with integer patterns
 	case C2_L_PTINT: {
-		long tgt = 0;
+		int64_t tgt = 0;
 
 		// Get the value
 		// A predefined target

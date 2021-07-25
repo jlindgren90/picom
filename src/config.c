@@ -392,7 +392,7 @@ parse_geometry_end:
 		log_error("Geometry coordinates exceeded limits: %s", src);
 		return false;
 	}
-	if (width > UINT_MAX || height > UINT_MAX) {
+	if ((ulong)width > UINT_MAX || (ulong)height > UINT_MAX) {
 		// less than 0 is checked for earlier
 		log_error("Geometry size exceeded limits: %s", src);
 		return false;

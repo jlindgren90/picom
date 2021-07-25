@@ -92,7 +92,7 @@ make_shadow(xcb_connection_t *c, const conv *kernel, double opacity, int width, 
 	}
 
 	unsigned char *data = ximage->data;
-	long sstride = ximage->stride;
+	int sstride = to_int_checked(ximage->stride);
 
 	// If the window body is smaller than the kernel, we do convolution directly
 	if (width < r * 2 && height < r * 2) {

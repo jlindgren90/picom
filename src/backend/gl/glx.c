@@ -487,6 +487,7 @@ static int glx_buffer_age(backend_t *base) {
 	glXQueryDrawable(gd->display, gd->target_win, GLX_BACK_BUFFER_AGE_EXT, &val);
 	return (int)val ?: -1;
 #else
+	(void)base;
 	return -1;
 #endif
 }

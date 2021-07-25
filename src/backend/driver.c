@@ -65,6 +65,9 @@ enum driver detect_driver(xcb_connection_t *c, backend_t *backend_data, xcb_wind
 		free(r);
 	}
 	free(randr_version);
+#else
+	(void)c;
+	(void)window;
 #endif
 
 	// If the backend supports driver detection, use that as well

@@ -29,7 +29,7 @@
 #if 1 // old xcb
 #define ALIGNOF(type) offsetof(struct { char dummy; type member; }, member)
 
-int
+unsigned int
 xcb_render_create_picture_value_list_serialize (void                                         **_buffer,
                                                 uint32_t                                       value_mask,
                                                 const xcb_render_create_picture_value_list_t  *_aux)
@@ -467,7 +467,11 @@ void x_set_picture_clip_region(xcb_connection_t *c, xcb_render_picture_t pict,
 void x_clear_picture_clip_region(xcb_connection_t *c, xcb_render_picture_t pict) {
 	xcb_render_change_picture_value_list_t v = {.clipmask = XCB_NONE};
 	xcb_generic_error_t *e = xcb_request_check(
+#if 0 // old xcb
 	    c, xcb_render_change_picture(c, pict, XCB_RENDER_CP_CLIP_MASK, &v));
+#else
+	    c, xcb_render_change_picture(c, pict, XCB_RENDER_CP_CLIP_MASK, (uint32_t*)&v));
+#endif
 	if (e) {
 		log_error_x_error(e, "failed to clear clip region");
 		free(e);

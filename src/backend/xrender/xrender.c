@@ -95,7 +95,7 @@ static void compose(backend_t *base, void *img_data, int dst_x, int dst_y,
 	struct _xrender_data *xd = (void *)base;
 	struct _xrender_image_data *img = img_data;
 	uint8_t op = (img->has_alpha ? XCB_RENDER_PICT_OP_OVER : XCB_RENDER_PICT_OP_SRC);
-	auto alpha_pict = xd->alpha_pict[(int)(img->opacity * MAX_ALPHA)];
+	xcb_render_picture_t alpha_pict = xd->alpha_pict[(int)(img->opacity * MAX_ALPHA)];
 	region_t reg;
 	pixman_region32_init(&reg);
 	pixman_region32_intersect(&reg, (region_t *)reg_paint, (region_t *)reg_visible);
@@ -150,8 +150,8 @@ static bool blur(backend_t *backend_data, double opacity, void *ctx_,
 	    resize_region(&reg_op, bctx->resize_width, bctx->resize_height);
 
 	const pixman_box32_t *extent_resized = pixman_region32_extents(&reg_op_resized);
-	const auto height_resized = to_u16_checked(extent_resized->y2 - extent_resized->y1);
-	const auto width_resized = to_u16_checked(extent_resized->x2 - extent_resized->x1);
+	const uint16_t height_resized = to_u16_checked(extent_resized->y2 - extent_resized->y1);
+	const uint16_t width_resized = to_u16_checked(extent_resized->x2 - extent_resized->x1);
 	static const char *filter0 = "Nearest";        // The "null" filter
 	static const char *filter = "convolution";
 
@@ -179,7 +179,7 @@ static bool blur(backend_t *backend_data, double opacity, void *ctx_,
 	pixman_region32_fini(&clip);
 
 	xcb_render_picture_t src_pict = xd->back[2], dst_pict = tmp_picture[0];
-	auto alpha_pict = xd->alpha_pict[(int)(opacity * MAX_ALPHA)];
+	xcb_render_picture_t alpha_pict = xd->alpha_pict[(int)(opacity * MAX_ALPHA)];
 	int current = 0;
 	x_set_picture_clip_region(c, src_pict, 0, 0, &reg_op_resized);
 
@@ -250,14 +250,14 @@ static bool blur(backend_t *backend_data, double opacity, void *ctx_,
 static void *
 bind_pixmap(backend_t *base, xcb_pixmap_t pixmap, struct xvisual_info fmt, bool owned) {
 	xcb_generic_error_t *e;
-	auto r = xcb_get_geometry_reply(base->c, xcb_get_geometry(base->c, pixmap), &e);
+	xcb_get_geometry_reply_t *r = xcb_get_geometry_reply(base->c, xcb_get_geometry(base->c, pixmap), &e);
 	if (!r) {
 		log_error("Invalid pixmap: %#010x", pixmap);
 		x_print_error(e->full_sequence, e->major_code, e->minor_code, e->error_code);
 		return NULL;
 	}
 
-	auto img = ccalloc(1, struct _xrender_image_data);
+	struct _xrender_image_data *img = ccalloc(1, struct _xrender_image_data);
 	img->depth = (uint8_t)fmt.visual_depth;
 	img->width = img->ewidth = r->width;
 	img->height = img->eheight = r->height;
@@ -326,7 +326,7 @@ static void present(backend_t *base, const region_t *region) {
 
 		// Make sure we got reply from PresentPixmap before waiting for events,
 		// to avoid deadlock
-		auto e = xcb_request_check(
+		xcb_generic_error_t *e = xcb_request_check(
 		    base->c, xcb_present_pixmap_checked(
 		                 xd->base.c, xd->target_win,
 		                 xd->back_pixmap[xd->curr_back], 0, XCB_NONE, XCB_NONE, 0,
@@ -398,13 +398,13 @@ static bool image_op(backend_t *base, enum image_operations op, void *image,
 
 	pixman_region32_init(&reg);
 
-	const auto tmpw = to_u16_checked(img->width);
-	const auto tmph = to_u16_checked(img->height);
+	const uint16_t tmpw = to_u16_checked(img->width);
+	const uint16_t tmph = to_u16_checked(img->height);
 	switch (op) {
 	case IMAGE_OP_INVERT_COLOR_ALL:
 		x_set_picture_clip_region(base->c, img->pict, 0, 0, reg_visible);
 		if (img->has_alpha) {
-			auto tmp_pict =
+			xcb_render_picture_t tmp_pict =
 			    x_create_picture_with_visual(base->c, base->root, img->width,
 			                                 img->height, img->visual, 0, NULL);
 			xcb_render_composite(base->c, XCB_RENDER_PICT_OP_SRC, img->pict,
@@ -451,7 +451,7 @@ static bool image_op(backend_t *base, enum image_operations op, void *image,
 			break;
 		}
 
-		auto alpha_pict = xd->alpha_pict[(int)((1 - dargs[0]) * MAX_ALPHA)];
+		xcb_render_picture_t alpha_pict = xd->alpha_pict[(int)((1 - dargs[0]) * MAX_ALPHA)];
 		x_set_picture_clip_region(base->c, img->pict, 0, 0, &reg);
 		xcb_render_composite(base->c, XCB_RENDER_PICT_OP_OUT_REVERSE, alpha_pict,
 		                     XCB_NONE, img->pict, 0, 0, 0, 0, 0, 0, tmpw, tmph);
@@ -472,7 +472,7 @@ static bool image_op(backend_t *base, enum image_operations op, void *image,
 static void *copy(backend_t *base, const void *image, const region_t *reg) {
 	const struct _xrender_image_data *img = image;
 	struct _xrender_data *xd = (void *)base;
-	auto new_img = ccalloc(1, struct _xrender_image_data);
+	struct _xrender_image_data *new_img = ccalloc(1, struct _xrender_image_data);
 	assert(img->visual != XCB_NONE);
 	log_trace("xrender: copying %#010x visual %#x", img->pixmap, img->visual);
 	*new_img = *img;
@@ -504,7 +504,7 @@ static void *copy(backend_t *base, const void *image, const region_t *reg) {
 }
 
 void *create_blur_context(backend_t *base attr_unused, enum blur_method method, void *args) {
-	auto ret = ccalloc(1, struct _xrender_blur_context);
+	struct _xrender_blur_context *ret = ccalloc(1, struct _xrender_blur_context);
 	if (!method || method >= BLUR_METHOD_INVALID) {
 		ret->method = BLUR_METHOD_NONE;
 		return ret;
@@ -556,7 +556,7 @@ void get_blur_size(void *blur_context, int *width, int *height) {
 }
 
 backend_t *backend_xrender_init(session_t *ps) {
-	auto xd = ccalloc(1, struct _xrender_data);
+	struct _xrender_data *xd = ccalloc(1, struct _xrender_data);
 	init_backend_base(&xd->base, ps);
 
 	for (int i = 0; i <= MAX_ALPHA; ++i) {
@@ -578,7 +578,7 @@ backend_t *backend_xrender_init(session_t *ps) {
 	xd->target = x_create_picture_with_visual_and_pixmap(
 	    ps->c, ps->vis, xd->target_win, XCB_RENDER_CP_SUBWINDOW_MODE, &pa);
 
-	auto pictfmt = x_get_pictform_for_visual(ps->c, ps->vis);
+	const xcb_render_pictforminfo_t *pictfmt = x_get_pictform_for_visual(ps->c, ps->vis);
 	if (!pictfmt) {
 		log_fatal("Default visual is invalid");
 		abort();
@@ -586,8 +586,8 @@ backend_t *backend_xrender_init(session_t *ps) {
 
 	xd->vsync = ps->o.vsync;
 	if (ps->present_exists) {
-		auto eid = x_new_id(ps->c);
-		auto e =
+		uint32_t eid = x_new_id(ps->c);
+		xcb_generic_error_t *e =
 		    xcb_request_check(ps->c, xcb_present_select_input_checked(
 		                                 ps->c, eid, xd->target_win,
 		                                 XCB_PRESENT_EVENT_MASK_COMPLETE_NOTIFY));

@@ -36,13 +36,13 @@ struct file_watch_registry {
 };
 
 static void file_watch_ev_cb(EV_P attr_unused, struct ev_io *w, int revent attr_unused) {
-	auto fwr = (struct file_watch_registry *)w;
+	struct file_watch_registry *fwr = (struct file_watch_registry *)w;
 
 	while (true) {
 		int wd = -1;
 #ifdef HAS_INOTIFY
 		struct inotify_event inotify_event;
-		auto ret = read(w->fd, &inotify_event, sizeof(struct inotify_event));
+		ssize_t ret = read(w->fd, &inotify_event, sizeof(struct inotify_event));
 		if (ret < 0) {
 			if (errno != EAGAIN) {
 				log_error_errno("Failed to read from inotify fd");
@@ -94,7 +94,7 @@ void *file_watch_init(EV_P) {
 	log_info("No file watching support found on the host system.");
 	return NULL;
 #endif
-	auto fwr = ccalloc(1, struct file_watch_registry);
+	struct file_watch_registry *fwr = ccalloc(1, struct file_watch_registry);
 	ev_io_init(&fwr->w, file_watch_ev_cb, fd, EV_READ);
 	ev_io_start(EV_A_ & fwr->w);
 
@@ -103,7 +103,7 @@ void *file_watch_init(EV_P) {
 
 void file_watch_destroy(EV_P_ void *_fwr) {
 	log_debug("Stopping watching for file changes");
-	auto fwr = (struct file_watch_registry *)_fwr;
+	struct file_watch_registry *fwr = (struct file_watch_registry *)_fwr;
 	struct watched_file *i, *tmp;
 
 	HASH_ITER(hh, fwr->reg, i, tmp) {
@@ -124,7 +124,7 @@ void file_watch_destroy(EV_P_ void *_fwr) {
 
 bool file_watch_add(void *_fwr, const char *filename, file_watch_cb_t cb, void *ud) {
 	log_debug("Adding \"%s\" to watched files", filename);
-	auto fwr = (struct file_watch_registry *)_fwr;
+	struct file_watch_registry *fwr = (struct file_watch_registry *)_fwr;
 	int wd = -1;
 
 	struct stat statbuf;
@@ -178,7 +178,7 @@ bool file_watch_add(void *_fwr, const char *filename, file_watch_cb_t cb, void *
 	assert(false);
 #endif        // HAS_KQUEUE
 
-	auto w = ccalloc(1, struct watched_file);
+	struct watched_file *w = ccalloc(1, struct watched_file);
 	w->wd = wd;
 	w->cb = cb;
 	w->ud = ud;

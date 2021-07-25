@@ -51,7 +51,7 @@ struct xvisual_info {
 #define XCB_AWAIT_VOID(func, c, ...)                                                     \
 	({                                                                               \
 		bool __success = true;                                                   \
-		__auto_type __e = xcb_request_check(c, func##_checked(c, __VA_ARGS__));  \
+		xcb_generic_error_t *__e = xcb_request_check(c, func##_checked(c, __VA_ARGS__));  \
 		if (__e) {                                                               \
 			x_print_error(__e->sequence, __e->major_code, __e->minor_code,   \
 			              __e->error_code);                                  \
@@ -64,7 +64,7 @@ struct xvisual_info {
 #define XCB_AWAIT(func, c, ...)                                                          \
 	({                                                                               \
 		xcb_generic_error_t *__e = NULL;                                         \
-		__auto_type __r = func##_reply(c, func(c, __VA_ARGS__), &__e);           \
+		func##_reply_t *__r = func##_reply(c, func(c, __VA_ARGS__), &__e);           \
 		if (__e) {                                                               \
 			x_print_error(__e->sequence, __e->major_code, __e->minor_code,   \
 			              __e->error_code);                                  \
@@ -80,7 +80,7 @@ struct xvisual_info {
 
 /// Wraps x_new_id. abort the program if x_new_id returns error
 static inline uint32_t x_new_id(xcb_connection_t *c) {
-	auto ret = xcb_generate_id(c);
+	uint32_t ret = xcb_generate_id(c);
 	if (ret == (uint32_t)-1) {
 		log_fatal("We seems to have run of XIDs. This is either a bug in the X "
 		          "server, or a resource leakage in the compositor. Please open "

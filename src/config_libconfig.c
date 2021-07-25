@@ -74,8 +74,8 @@ char **xdg_config_dirs(void) {
 	// Store the string and the result pointers together so they can be
 	// freed together
 	char **dir_list = cvalloc(sizeof(char *) * (count + 2) + strlen(xdgd) + 1);
-	auto dirs = strcpy((char *)dir_list + sizeof(char *) * (count + 2), xdgd);
-	auto path = dirs;
+	char *dirs = strcpy((char *)dir_list + sizeof(char *) * (count + 2), xdgd);
+	char *path = dirs;
 
 	for (size_t i = 0; i < count; i++) {
 		dir_list[i] = path;
@@ -99,13 +99,13 @@ char **xdg_config_dirs(void) {
 }
 
 TEST_CASE(xdg_config_dirs) {
-	auto old_var = getenv("XDG_CONFIG_DIRS");
+	char *old_var = getenv("XDG_CONFIG_DIRS");
 	if (old_var) {
 		old_var = strdup(old_var);
 	}
 	unsetenv("XDG_CONFIG_DIRS");
 
-	auto result = xdg_config_dirs();
+	char **result = xdg_config_dirs();
 	TEST_STREQUAL(result[0], "/etc/xdg");
 	TEST_EQUAL(result[1], NULL);
 	free(result);
@@ -169,8 +169,8 @@ FILE *open_config_file(const char *cpath, char **ppath) {
 	}
 
 	// First search for config file in user config directory
-	auto config_home = xdg_config_home();
-	auto ret = open_config_file_at(config_home, ppath);
+	const char *config_home = xdg_config_home();
+	FILE *ret = open_config_file_at(config_home, ppath);
 	free((void *)config_home);
 	if (ret) {
 		return ret;
@@ -179,7 +179,7 @@ FILE *open_config_file(const char *cpath, char **ppath) {
 	// Fall back to legacy config file in user home directory
 	const char *home = getenv("HOME");
 	if (home && strlen(home)) {
-		auto path = mstrjoin(home, config_filename_legacy);
+		char *path = mstrjoin(home, config_filename_legacy);
 		ret = fopen(path, "r");
 		if (ret && ppath) {
 			*ppath = path;
@@ -192,7 +192,7 @@ FILE *open_config_file(const char *cpath, char **ppath) {
 	}
 
 	// Fall back to config file in system config directory
-	auto config_dirs = xdg_config_dirs();
+	char **config_dirs = xdg_config_dirs();
 	for (int i = 0; config_dirs[i]; i++) {
 		ret = open_config_file_at(config_dirs[i], ppath);
 		if (ret) {
@@ -455,7 +455,7 @@ char *parse_config_libconfig(options_t *opt, const char *config_file, bool *shad
 	}
 	// --log-level
 	if (config_lookup_string(&cfg, "log-level", &sval)) {
-		auto level = string_to_log_level(sval);
+		enum log_level level = string_to_log_level(sval);
 		if (level == LOG_LEVEL_INVALID) {
 			log_warn("Invalid log level, defaults to WARN");
 		} else {

@@ -467,7 +467,7 @@ static void set_ignore(session_t *ps, unsigned long sequence) {
 	if (ps->o.show_all_xerrors)
 		return;
 
-	auto i = cmalloc(ignore_t);
+	ignore_t *i = cmalloc(ignore_t);
 	if (!i)
 		return;
 
@@ -493,13 +493,13 @@ static inline void set_ignore_cookie(session_t *ps, xcb_void_cookie_t cookie) {
  * @return true if it has the attribute, false otherwise
  */
 static inline bool wid_has_prop(const session_t *ps, xcb_window_t w, xcb_atom_t atom) {
-	auto r = xcb_get_property_reply(
+	xcb_get_property_reply_t *r = xcb_get_property_reply(
 	    ps->c, xcb_get_property(ps->c, 0, w, atom, XCB_GET_PROPERTY_TYPE_ANY, 0, 0), NULL);
 	if (!r) {
 		return false;
 	}
 
-	auto rtype = r->type;
+	xcb_atom_t rtype = r->type;
 	free(r);
 
 	if (rtype != XCB_NONE) {

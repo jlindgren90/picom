@@ -330,14 +330,14 @@ bool glx_init_blur(session_t *ps) {
 		}
 
 		for (int i = 0; i < ps->o.blur_kernel_count; ++i) {
-			auto kern = ps->o.blur_kerns[i];
+			struct conv *kern = ps->o.blur_kerns[i];
 			glx_blur_pass_t *ppass = &ps->psglx->blur_passes[i];
 
 			// Build shader
 			int width = kern->w, height = kern->h;
 			int nele = width * height - 1;
 			assert(nele >= 0);
-			auto len =
+			size_t len =
 			    strlen(FRAG_SHADER_BLUR_PREFIX) + strlen(sampler_type) +
 			    strlen(extension) +
 			    (strlen(shader_add) + strlen(texture_func) + 42) * (uint)nele +
@@ -495,7 +495,7 @@ bool glx_bind_pixmap(session_t *ps, glx_texture_t **pptex, xcb_pixmap_t pixmap, 
 
 		// Retrieve pixmap parameters, if they aren't provided
 		if (!width || !height) {
-			auto r = xcb_get_geometry_reply(
+			xcb_get_geometry_reply_t *r = xcb_get_geometry_reply(
 			    ps->c, xcb_get_geometry(ps->c, pixmap), NULL);
 			if (!r) {
 				log_error("Failed to query info of pixmap %#010x.", pixmap);
@@ -828,18 +828,18 @@ bool glx_blur_dst(session_t *ps, int dx, int dy, int width, int height, float z,
 			glUniform1f(ppass->unifm_factor_center, factor_center);
 
 		P_PAINTREG_START(crect) {
-			auto rx = (GLfloat)(crect.x1 - mdx) * texfac_x;
-			auto ry = (GLfloat)(mheight - (crect.y1 - mdy)) * texfac_y;
-			auto rxe = rx + (GLfloat)(crect.x2 - crect.x1) * texfac_x;
-			auto rye = ry - (GLfloat)(crect.y2 - crect.y1) * texfac_y;
-			auto rdx = (GLfloat)(crect.x1 - mdx);
-			auto rdy = (GLfloat)(mheight - crect.y1 + mdy);
+			GLfloat rx = (GLfloat)(crect.x1 - mdx) * texfac_x;
+			GLfloat ry = (GLfloat)(mheight - (crect.y1 - mdy)) * texfac_y;
+			GLfloat rxe = rx + (GLfloat)(crect.x2 - crect.x1) * texfac_x;
+			GLfloat rye = ry - (GLfloat)(crect.y2 - crect.y1) * texfac_y;
+			GLfloat rdx = (GLfloat)(crect.x1 - mdx);
+			GLfloat rdy = (GLfloat)(mheight - crect.y1 + mdy);
 			if (last_pass) {
 				rdx = (GLfloat)crect.x1;
 				rdy = (GLfloat)(ps->root_height - crect.y1);
 			}
-			auto rdxe = rdx + (GLfloat)(crect.x2 - crect.x1);
-			auto rdye = rdy - (GLfloat)(crect.y2 - crect.y1);
+			GLfloat rdxe = rdx + (GLfloat)(crect.x2 - crect.x1);
+			GLfloat rdye = rdy - (GLfloat)(crect.y2 - crect.y1);
 
 			// log_trace("%f, %f, %f, %f -> %f, %f, %f, %f", rx, ry,
 			// rxe, rye, rdx,
@@ -1057,10 +1057,10 @@ bool glx_render(session_t *ps, const glx_texture_t *ptex, int x, int y, int dx, 
 	{
 		P_PAINTREG_START(crect) {
 			// XXX explain these variables
-			auto rx = (GLfloat)(crect.x1 - dx + x);
-			auto ry = (GLfloat)(crect.y1 - dy + y);
-			auto rxe = rx + (GLfloat)(crect.x2 - crect.x1);
-			auto rye = ry + (GLfloat)(crect.y2 - crect.y1);
+			GLfloat rx = (GLfloat)(crect.x1 - dx + x);
+			GLfloat ry = (GLfloat)(crect.y1 - dy + y);
+			GLfloat rxe = rx + (GLfloat)(crect.x2 - crect.x1);
+			GLfloat rye = ry + (GLfloat)(crect.y2 - crect.y1);
 			// Rectangle textures have [0-w] [0-h] while 2D texture has [0-1]
 			// [0-1] Thanks to amonakov for pointing out!
 			if (GL_TEXTURE_2D == ptex->target) {

@@ -148,7 +148,7 @@ void cxinerama_upd_scrs(session_t *ps) {
 	}
 	free(active);
 
-	auto xinerama_scrs =
+	xcb_xinerama_query_screens_reply_t *xinerama_scrs =
 	    xcb_xinerama_query_screens_reply(ps->c, xcb_xinerama_query_screens(ps->c), NULL);
 	if (!xinerama_scrs) {
 		return;
@@ -176,7 +176,7 @@ static inline struct managed_win *find_win_all(session_t *ps, const xcb_window_t
 	if (!wid || PointerRoot == wid || wid == ps->root || wid == ps->overlay)
 		return NULL;
 
-	auto w = find_managed_win(ps, wid);
+	struct managed_win *w = find_managed_win(ps, wid);
 	if (!w)
 		w = find_toplevel(ps, wid);
 	if (!w)
@@ -219,11 +219,11 @@ void add_damage(session_t *ps, const region_t *damage) {
  * In milliseconds.
  */
 static double fade_timeout(session_t *ps) {
-	auto now = get_time_ms();
+	int64_t now = get_time_ms();
 	if (ps->o.fade_delta + ps->fade_time < now)
 		return 0;
 
-	auto diff = ps->o.fade_delta + ps->fade_time - now;
+	int64_t diff = ps->o.fade_delta + ps->fade_time - now;
 
 	diff = clamp(diff, 0, ps->o.fade_delta * 2);
 
@@ -237,7 +237,7 @@ static double fade_timeout(session_t *ps) {
  * @return whether we are still in fading mode
  */
 static bool run_fade(session_t *ps, struct managed_win **_w, long steps) {
-	auto w = *_w;
+	struct managed_win *w = *_w;
 	if (w->state == WSTATE_MAPPED || w->state == WSTATE_UNMAPPED) {
 		// We are not fading
 		assert(w->opacity_target == w->opacity);
@@ -329,7 +329,7 @@ uint32_t determine_evmask(session_t *ps, xcb_window_t wid, win_evmode_t mode) {
 void update_ewmh_active_win(session_t *ps) {
 	// Search for the window
 	xcb_window_t wid = wid_get_prop_window(ps, ps->root, ps->atoms->a_NET_ACTIVE_WINDOW);
-	auto w = find_win_all(ps, wid);
+	struct managed_win *w = find_win_all(ps, wid);
 
 	// Mark the window focused. No need to unfocus the previous one.
 	if (w) {
@@ -362,7 +362,7 @@ static void recheck_focus(session_t *ps) {
 		free(reply);
 	}
 
-	auto w = find_win_all(ps, wid);
+	struct managed_win *w = find_win_all(ps, wid);
 
 	log_trace("%#010" PRIx32 " (%#010lx \"%s\") focused.", wid,
 	          (w ? w->base.id : XCB_NONE), (w ? w->name : NULL));
@@ -485,7 +485,7 @@ static bool initialize_backend(session_t *ps) {
 			if (!_w->managed) {
 				continue;
 			}
-			auto w = (struct managed_win *)_w;
+			struct managed_win *w = (struct managed_win *)_w;
 			assert(w->state == WSTATE_MAPPED || w->state == WSTATE_UNMAPPED);
 			if (w->state == WSTATE_MAPPED) {
 				// We need to reacquire image
@@ -515,7 +515,7 @@ static bool initialize_backend(session_t *ps) {
 
 /// Handle configure event of the root window
 static void configure_root(session_t *ps) {
-	auto r = XCB_AWAIT(xcb_get_geometry, ps->c, ps->root);
+	xcb_get_geometry_reply_t *r = XCB_AWAIT(xcb_get_geometry, ps->c, ps->root);
 	if (!r) {
 		log_fatal("Failed to fetch root geometry");
 		abort();
@@ -548,7 +548,7 @@ static void configure_root(session_t *ps) {
 	rebuild_shadow_exclude_reg(ps);
 
 	// Invalidate reg_ignore from the top
-	auto top_w = win_stack_find_next_managed(ps, &ps->window_stack);
+	struct managed_win *top_w = win_stack_find_next_managed(ps, &ps->window_stack);
 	if (top_w) {
 		rc_region_unref(&top_w->reg_ignore);
 		top_w->reg_ignore_valid = false;
@@ -620,7 +620,7 @@ static struct managed_win *paint_preprocess(session_t *ps, bool *fade_running) {
 
 	// Fading step calculation
 	long steps = 0L;
-	auto now = get_time_ms();
+	int64_t now = get_time_ms();
 	if (ps->fade_time) {
 		assert(now >= ps->fade_time);
 		steps = (now - ps->fade_time) / ps->o.fade_delta;
@@ -854,7 +854,7 @@ void root_damaged(session_t *ps) {
 		if (ps->root_image) {
 			ps->backend_data->ops->release_image(ps->backend_data, ps->root_image);
 		}
-		auto pixmap = x_get_root_back_pixmap(ps);
+		xcb_pixmap_t pixmap = x_get_root_back_pixmap(ps);
 		if (pixmap != XCB_NONE) {
 			ps->root_image = ps->backend_data->ops->bind_pixmap(
 			    ps->backend_data, pixmap, x_get_visual_info(ps->c, ps->vis), false);
@@ -920,7 +920,7 @@ static int register_cm(session_t *ps) {
 	assert(!ps->reg_win);
 
 	ps->reg_win = x_new_id(ps->c);
-	auto e = xcb_request_check(
+	xcb_generic_error_t *e = xcb_request_check(
 	    ps->c, xcb_create_window_checked(ps->c, XCB_COPY_FROM_PARENT, ps->reg_win, ps->root,
 	                                     0, 0, 1, 1, 0, XCB_NONE, ps->vis, 0, NULL));
 
@@ -943,7 +943,7 @@ static int register_cm(session_t *ps) {
 
 	// Set _NET_WM_PID
 	{
-		auto pid = getpid();
+		pid_t pid = getpid();
 		xcb_change_property(ps->c, XCB_PROP_MODE_REPLACE, ps->reg_win,
 		                    ps->atoms->a_NET_WM_PID, XCB_ATOM_CARDINAL, 32, 1, &pid);
 	}
@@ -1124,7 +1124,7 @@ static bool init_debug_window(session_t *ps) {
 	xcb_colormap_t colormap = x_new_id(ps->c);
 	ps->debug_window = x_new_id(ps->c);
 
-	auto err = xcb_request_check(
+	xcb_generic_error_t *err = xcb_request_check(
 	    ps->c, xcb_create_colormap_checked(ps->c, XCB_COLORMAP_ALLOC_NONE, colormap,
 	                                       ps->root, ps->vis));
 	if (err) {
@@ -1287,11 +1287,11 @@ static void handle_queued_x_events(EV_P attr_unused, ev_prepare *w, int revents 
 static void handle_new_windows(session_t *ps) {
 	list_foreach_safe(struct win, w, &ps->window_stack, stack_neighbour) {
 		if (w->is_new) {
-			auto new_w = fill_win(ps, w);
+			struct win *new_w = fill_win(ps, w);
 			if (!new_w->managed) {
 				continue;
 			}
-			auto mw = (struct managed_win *)new_w;
+			struct managed_win *mw = (struct managed_win *)new_w;
 			if (mw->a.map_state == XCB_MAP_STATE_VIEWABLE) {
 				// Have to map immediately instead of queue window update
 				// because we need the window's extent right now.
@@ -1337,7 +1337,7 @@ static void fade_timer_callback(EV_P attr_unused, ev_timer *w, int revents attr_
 static void handle_pending_updates(EV_P_ struct session *ps) {
 	if (ps->pending_updates) {
 		log_debug("Delayed handling of events, entering critical section");
-		auto e = xcb_request_check(ps->c, xcb_grab_server_checked(ps->c));
+		xcb_generic_error_t *e = xcb_request_check(ps->c, xcb_grab_server_checked(ps->c));
 		if (e) {
 			log_fatal_x_error(e, "failed to grab x server");
 			return quit(ps);
@@ -1361,7 +1361,7 @@ static void handle_pending_updates(EV_P_ struct session *ps) {
 		refresh_windows(ps);
 
 		{
-			auto r = xcb_get_input_focus_reply(
+			xcb_get_input_focus_reply_t *r = xcb_get_input_focus_reply(
 			    ps->c, xcb_get_input_focus(ps->c), NULL);
 			if (!ps->active_win || (r && r->focus != ps->active_win->base.id)) {
 				recheck_focus(ps);
@@ -1397,13 +1397,13 @@ static void _draw_callback(EV_P_ session_t *ps, int revents attr_unused) {
 		// Using foreach_safe here since skipping fading can cause window to be
 		// freed if it's destroyed.
 		win_stack_foreach_managed_safe(w, &ps->window_stack) {
-			auto _ attr_unused = win_skip_fading(ps, w);
+			bool _ attr_unused = win_skip_fading(ps, w);
 		}
 	}
 
 	if (ps->o.benchmark) {
 		if (ps->o.benchmark_wid) {
-			auto w = find_managed_win(ps, ps->o.benchmark_wid);
+			struct managed_win *w = find_managed_win(ps, ps->o.benchmark_wid);
 			if (!w) {
 				log_fatal("Couldn't find specified benchmark window.");
 				exit(1);
@@ -1419,7 +1419,7 @@ static void _draw_callback(EV_P_ session_t *ps, int revents attr_unused) {
 	// should be redirected.
 	bool fade_running = false;
 	bool was_redirected = ps->redirected;
-	auto bottom = paint_preprocess(ps, &fade_running);
+	struct managed_win *bottom = paint_preprocess(ps, &fade_running);
 	ps->tmout_unredir_hit = false;
 
 	if (!was_redirected && ps->redirected) {
@@ -1546,7 +1546,7 @@ static void exit_enable(EV_P attr_unused, ev_signal *w, int revents attr_unused)
 }
 
 static void config_file_change_cb(void *_ps) {
-	auto ps = (struct session *)_ps;
+	struct session *ps = (struct session *)_ps;
 	reset_enable(ps->loop, NULL, 0);
 }
 
@@ -1638,7 +1638,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 #endif
 	};
 
-	auto stderr_logger = stderr_logger_new();
+	struct log_target *stderr_logger = stderr_logger_new();
 	if (stderr_logger) {
 		// stderr logger might fail to create if we are already
 		// daemonized.
@@ -1666,7 +1666,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 
 	ps->scr = DefaultScreen(ps->dpy);
 
-	auto screen = x_screen_of_display(ps->c, ps->scr);
+	xcb_screen_t *screen = x_screen_of_display(ps->c, ps->scr);
 	ps->vis = screen->root_visual;
 	ps->depth = screen->root_depth;
 	ps->root = screen->root;
@@ -1675,7 +1675,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 
 	// Start listening to events on root earlier to catch all possible
 	// root geometry changes
-	auto e = xcb_request_check(
+	xcb_generic_error_t *e = xcb_request_check(
 	    ps->c, xcb_change_window_attributes_checked(
 	               ps->c, ps->root, XCB_CW_EVENT_MASK,
 	               (const uint32_t[]){XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
@@ -1782,7 +1782,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	}
 
 	if (ps->o.logpath) {
-		auto l = file_logger_new(ps->o.logpath);
+		struct log_target *l = file_logger_new(ps->o.logpath);
 		if (l) {
 			log_info("Switching to log file: %s", ps->o.logpath);
 			if (stderr_logger) {
@@ -1857,7 +1857,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 
 	ext_info = xcb_get_extension_data(ps->c, &xcb_present_id);
 	if (ext_info && ext_info->present) {
-		auto r = xcb_present_query_version_reply(
+		xcb_present_query_version_reply_t *r = xcb_present_query_version_reply(
 		    ps->c,
 		    xcb_present_query_version(ps->c, XCB_PRESENT_MAJOR_VERSION,
 		                              XCB_PRESENT_MINOR_VERSION),
@@ -1874,7 +1874,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 		ps->xsync_error = ext_info->first_error;
 		ps->xsync_event = ext_info->first_event;
 		// Need X Sync 3.1 for fences
-		auto r = xcb_sync_initialize_reply(
+		xcb_sync_initialize_reply_t *r = xcb_sync_initialize_reply(
 		    ps->c,
 		    xcb_sync_initialize(ps->c, XCB_SYNC_MAJOR_VERSION, XCB_SYNC_MINOR_VERSION),
 		    NULL);
@@ -2001,7 +2001,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	free(config_file_to_free);
 
 	if (bkend_use_glx(ps) && !ps->o.experimental_backends) {
-		auto gl_logger = gl_string_marker_logger_new();
+		struct log_target *gl_logger = gl_string_marker_logger_new();
 		if (gl_logger) {
 			log_info("Enabling gl string marker");
 			log_add_target_tls(gl_logger);
@@ -2189,7 +2189,7 @@ static void session_destroy(session_t *ps) {
 		}
 
 		if (w->managed) {
-			auto mw = (struct managed_win *)w;
+			struct managed_win *mw = (struct managed_win *)w;
 			free_win_res(ps, mw);
 		}
 		free(w);
@@ -2357,7 +2357,7 @@ int main(int argc, char **argv) {
 	log_init_tls();
 
 	{
-		auto stderr_logger = stderr_logger_new();
+		struct log_target *stderr_logger = stderr_logger_new();
 		if (stderr_logger) {
 			log_add_target_tls(stderr_logger);
 		}
@@ -2376,7 +2376,7 @@ int main(int argc, char **argv) {
 			perror("pipe2");
 			return 1;
 		}
-		auto pid = fork();
+		pid_t pid = fork();
 		if (pid < 0) {
 			perror("fork");
 			return 1;

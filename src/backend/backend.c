@@ -31,7 +31,7 @@ struct backend_operations *backend_list[NUM_BKEND] = {
  */
 region_t get_damage(session_t *ps, bool all_damage) {
 	region_t region;
-	auto buffer_age_fn = ps->backend_data->ops->buffer_age;
+	int (*buffer_age_fn)(backend_t*) = ps->backend_data->ops->buffer_age;
 	int buffer_age = buffer_age_fn ? buffer_age_fn(ps->backend_data) : -1;
 
 	if (all_damage) {
@@ -43,7 +43,7 @@ region_t get_damage(session_t *ps, bool all_damage) {
 		pixman_region32_copy(&region, &ps->screen_reg);
 	} else {
 		for (int i = 0; i < buffer_age; i++) {
-			auto curr = ((ps->damage - ps->damage_ring) + i) % ps->ndamage;
+			long curr = ((ps->damage - ps->damage_ring) + i) % ps->ndamage;
 			log_trace("damage index: %d, damage ring offset: %ld", i, curr);
 			dump_region(&ps->damage_ring[curr]);
 			pixman_region32_union(&region, &region, &ps->damage_ring[curr]);
@@ -163,7 +163,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 	// on top of that window. This is used to reduce the number of pixels painted.
 	//
 	// Whether this is beneficial is to be determined XXX
-	for (auto w = t; w; w = w->prev_trans) {
+	for (struct managed_win *w = t; w; w = w->prev_trans) {
 		pixman_region32_subtract(&reg_visible, &ps->screen_reg, w->reg_ignore);
 		assert(!(w->flags & WIN_FLAGS_IMAGE_ERROR));
 		assert(!(w->flags & WIN_FLAGS_PIXMAP_STALE));
@@ -171,7 +171,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 
 		// The bounding shape of the window, in global/target coordinates
 		// reminder: bounding shape contains the WM frame
-		auto reg_bound = win_get_bounding_shape_global_by_val(w);
+		region_t reg_bound = win_get_bounding_shape_global_by_val(w);
 
 		// The clip region for the current window, in global/target coordinates
 		// reg_paint_in_bound \in reg_paint
@@ -195,7 +195,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 		//      with shaders), we should consult the background whether the window
 		//      is transparent or not. for now we will just rely on the
 		//      force_win_blend option
-		auto real_win_mode = w->mode;
+		winmode_t real_win_mode = w->mode;
 
 		if (w->blur_background &&
 		    (ps->o.force_win_blend || real_win_mode == WMODE_TRANS ||
@@ -249,7 +249,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 				assert(ps->o.blur_background_frame);
 				assert(real_win_mode == WMODE_FRAME_TRANS);
 
-				auto reg_blur = win_get_region_frame_local_by_val(w);
+				region_t reg_blur = win_get_region_frame_local_by_val(w);
 				pixman_region32_translate(&reg_blur, w->g.x, w->g.y);
 				// make sure reg_blur \in reg_paint
 				pixman_region32_intersect(&reg_blur, &reg_blur, &reg_paint);
@@ -270,7 +270,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 			assert(!(w->flags & WIN_FLAGS_SHADOW_NONE));
 			// Clip region for the shadow
 			// reg_shadow \in reg_paint
-			auto reg_shadow = win_extents_by_val(w);
+			region_t reg_shadow = win_extents_by_val(w);
 			pixman_region32_intersect(&reg_shadow, &reg_shadow, &reg_paint);
 			if (!ps->o.wintype_option[w->window_type].full_shadow) {
 				pixman_region32_subtract(&reg_shadow, &reg_shadow, &reg_bound);
@@ -308,7 +308,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 				    ps->backend_data, w->shadow_image, w->g.x + w->shadow_dx,
 				    w->g.y + w->shadow_dy, &reg_shadow, &reg_visible);
 			} else {
-				auto new_img = ps->backend_data->ops->copy(
+				void *new_img = ps->backend_data->ops->copy(
 				    ps->backend_data, w->shadow_image, &reg_visible);
 				ps->backend_data->ops->image_op(
 				    ps->backend_data, IMAGE_OP_APPLY_ALPHA_ALL, new_img,
@@ -362,7 +362,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 			pixman_region32_intersect(&reg_visible_local, &reg_visible_local,
 			                          &reg_bound_local);
 
-			auto new_img = ps->backend_data->ops->copy(
+			void *new_img = ps->backend_data->ops->copy(
 			    ps->backend_data, w->win_image, &reg_visible_local);
 			if (w->invert_color) {
 				ps->backend_data->ops->image_op(
@@ -379,7 +379,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 				    &reg_visible_local, (double[]){dim_opacity});
 			}
 			if (w->frame_opacity != 1) {
-				auto reg_frame = win_get_region_frame_local_by_val(w);
+				region_t reg_frame = win_get_region_frame_local_by_val(w);
 				ps->backend_data->ops->image_op(
 				    ps->backend_data, IMAGE_OP_APPLY_ALPHA, new_img, &reg_frame,
 				    &reg_visible_local, (double[]){w->frame_opacity});
@@ -403,7 +403,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 	pixman_region32_fini(&reg_paint);
 
 	if (ps->o.monitor_repaint) {
-		auto reg_damage_debug = get_damage(ps, false);
+		region_t reg_damage_debug = get_damage(ps, false);
 		ps->backend_data->ops->fill(
 		    ps->backend_data, (struct color){0.5, 0, 0, 0.5}, &reg_damage_debug);
 		pixman_region32_fini(&reg_damage_debug);

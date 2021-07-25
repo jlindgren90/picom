@@ -21,7 +21,7 @@ static xrc_xid_record_t *gs_xid_records = NULL;
  * @brief Add a record of given XID to the allocation table.
  */
 void xrc_add_xid_(XID xid, const char *type, M_POS_DATA_PARAMS) {
-	auto prec = ccalloc(1, xrc_xid_record_t);
+	xrc_xid_record_t *prec = ccalloc(1, xrc_xid_record_t);
 	prec->xid = xid;
 	prec->type = type;
 	M_CPY_POS_DATA(prec);

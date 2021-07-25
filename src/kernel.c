@@ -139,7 +139,7 @@ void sum_kernel_preprocess(conv *map) {
 		free(map->rsum);
 	}
 
-	auto sum = map->rsum = ccalloc(map->w * map->h, double);
+	double *sum = map->rsum = ccalloc(map->w * map->h, double);
 	sum[0] = map->data[0];
 
 	for (int x = 1; x < map->w; x++) {

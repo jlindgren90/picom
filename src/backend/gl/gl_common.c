@@ -48,7 +48,7 @@ struct gl_blur_context {
 };
 
 static GLint glGetUniformLocationChecked(GLuint p, const char *name) {
-	auto ret = glGetUniformLocation(p, name);
+	GLint ret = glGetUniformLocation(p, name);
 	if (ret < 0) {
 		log_info("Failed to get location of uniform '%s'. This is normal when "
 		         "using custom shaders.",
@@ -264,7 +264,7 @@ _gl_average_texture_color(backend_t *base, GLuint source_texture, GLuint destina
  * deleted when the gl_image is released.
  */
 static GLuint gl_average_texture_color(backend_t *base, struct gl_image *img) {
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 
 	// Prepare textures which will be used for destination and source of rendering
 	// during downscaling.
@@ -359,7 +359,7 @@ static GLuint gl_average_texture_color(backend_t *base, struct gl_image *img) {
  */
 static void _gl_compose(backend_t *base, struct gl_image *img, GLuint target,
                         GLint *coord, GLuint *indices, int nrects) {
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 	if (!img || !img->inner->texture) {
 		log_error("Missing texture.");
 		return;
@@ -476,10 +476,10 @@ x_rect_to_coords(int nrects, const rect_t *rects, int dst_x, int dst_y, int text
 		}
 
 		// Vertex coordinates
-		auto vx1 = crect.x1;
-		auto vy1 = crect.y2;
-		auto vx2 = crect.x2;
-		auto vy2 = crect.y1;
+		int32_t vx1 = crect.x1;
+		int32_t vy1 = crect.y2;
+		int32_t vx2 = crect.x2;
+		int32_t vy2 = crect.y1;
 
 		// log_trace("Rect %d: %f, %f, %f, %f -> %d, %d, %d, %d",
 		//          ri, rx, ry, rxe, rye, rdx, rdy, rdxe, rdye);
@@ -507,7 +507,7 @@ x_rect_to_coords(int nrects, const rect_t *rects, int dst_x, int dst_y, int text
 // TODO: make use of reg_visible
 void gl_compose(backend_t *base, void *image_data, int dst_x, int dst_y,
                 const region_t *reg_tgt, const region_t *reg_visible attr_unused) {
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 	struct gl_image *img = image_data;
 
 	// Painting
@@ -526,8 +526,8 @@ void gl_compose(backend_t *base, void *image_data, int dst_x, int dst_y,
 	// screen, with y axis pointing down. We have to do some coordinate conversion in
 	// this function
 
-	auto coord = ccalloc(nrects * 16, GLint);
-	auto indices = ccalloc(nrects * 6, GLuint);
+	GLint *coord = ccalloc(nrects * 16, GLint);
+	GLuint *indices = ccalloc(nrects * 6, GLuint);
 	x_rect_to_coords(nrects, rects, dst_x, dst_y, img->inner->height, gd->height,
 	                 img->inner->y_inverted, coord, indices);
 	_gl_compose(base, img, gd->back_fbo, coord, indices, nrects);
@@ -542,7 +542,7 @@ void gl_compose(backend_t *base, void *image_data, int dst_x, int dst_y,
 bool gl_blur(backend_t *base, double opacity, void *ctx, const region_t *reg_blur,
              const region_t *reg_visible attr_unused) {
 	struct gl_blur_context *bctx = ctx;
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 
 	if (gd->width + bctx->resize_width * 2 != bctx->texture_width ||
 	    gd->height + bctx->resize_height * 2 != bctx->texture_height) {
@@ -587,7 +587,7 @@ bool gl_blur(backend_t *base, double opacity, void *ctx, const region_t *reg_blu
 	}
 
 	// Remainder: regions are in Xorg coordinates
-	auto reg_blur_resized =
+	region_t reg_blur_resized =
 	    resize_region(reg_blur, bctx->resize_width, bctx->resize_height);
 	const rect_t *extent = pixman_region32_extents((region_t *)reg_blur),
 	             *extent_resized = pixman_region32_extents(&reg_blur_resized);
@@ -607,13 +607,13 @@ bool gl_blur(backend_t *base, double opacity, void *ctx, const region_t *reg_blu
 		return true;
 	}
 
-	auto coord = ccalloc(nrects * 16, GLint);
-	auto indices = ccalloc(nrects * 6, GLuint);
+	GLint *coord = ccalloc(nrects * 16, GLint);
+	GLuint *indices = ccalloc(nrects * 6, GLuint);
 	x_rect_to_coords(nrects, rects, extent_resized->x1, extent_resized->y2,
 	                 bctx->texture_height, gd->height, false, coord, indices);
 
-	auto coord_resized = ccalloc(nrects_resized * 16, GLint);
-	auto indices_resized = ccalloc(nrects_resized * 6, GLuint);
+	GLint *coord_resized = ccalloc(nrects_resized * 16, GLint);
+	GLuint *indices_resized = ccalloc(nrects_resized * 6, GLuint);
 	x_rect_to_coords(nrects_resized, rects_resized, extent_resized->x1,
 	                 extent_resized->y2, bctx->texture_height, bctx->texture_height,
 	                 false, coord_resized, indices_resized);
@@ -866,7 +866,7 @@ static void _gl_fill(backend_t *base, struct color c, const region_t *clip, GLui
 	static const GLuint fill_vert_in_coord_loc = 0;
 	int nrects;
 	const rect_t *rect = pixman_region32_rectangles((region_t *)clip, &nrects);
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
@@ -881,8 +881,8 @@ static void _gl_fill(backend_t *base, struct color c, const region_t *clip, GLui
 	glBindBuffer(GL_ARRAY_BUFFER, bo[0]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bo[1]);
 
-	auto coord = ccalloc(nrects * 8, GLint);
-	auto indices = ccalloc(nrects * 6, GLuint);
+	GLint *coord = ccalloc(nrects * 8, GLint);
+	GLuint *indices = ccalloc(nrects * 6, GLuint);
 	for (int i = 0; i < nrects; i++) {
 		GLint y1 = y_inverted ? height - rect[i].y2 : rect[i].y1,
 		      y2 = y_inverted ? height - rect[i].y1 : rect[i].y2;
@@ -921,13 +921,13 @@ static void _gl_fill(backend_t *base, struct color c, const region_t *clip, GLui
 }
 
 void gl_fill(backend_t *base, struct color c, const region_t *clip) {
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 	return _gl_fill(base, c, clip, gd->back_fbo, gd->height, true);
 }
 
 void gl_release_image(backend_t *base, void *image_data) {
 	struct gl_image *wd = image_data;
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 	wd->inner->refcount--;
 	assert(wd->inner->refcount >= 0);
 	if (wd->inner->refcount > 0) {
@@ -948,7 +948,7 @@ void gl_release_image(backend_t *base, void *image_data) {
 void *gl_copy(backend_t *base attr_unused, const void *image_data,
               const region_t *reg_visible attr_unused) {
 	const struct gl_image *img = image_data;
-	auto new_img = ccalloc(1, struct gl_image);
+	struct gl_image *new_img = ccalloc(1, struct gl_image);
 	*new_img = *img;
 	new_img->inner->refcount++;
 	return new_img;
@@ -984,10 +984,10 @@ void gl_destroy_blur_context(backend_t *base attr_unused, void *ctx) {
  */
 void *gl_create_blur_context(backend_t *base, enum blur_method method, void *args) {
 	bool success = true;
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 
 	struct conv **kernels;
-	auto ctx = ccalloc(1, struct gl_blur_context);
+	struct gl_blur_context *ctx = ccalloc(1, struct gl_blur_context);
 
 	if (!method || method >= BLUR_METHOD_INVALID) {
 		ctx->method = BLUR_METHOD_NONE;
@@ -1038,7 +1038,7 @@ void *gl_create_blur_context(backend_t *base, enum blur_method method, void *arg
 	char *extension = strdup("");
 
 	for (int i = 0; i < nkernels; i++) {
-		auto kern = kernels[i];
+		struct conv *kern = kernels[i];
 		// Build shader
 		int width = kern->w, height = kern->h;
 		int nele = width * height;
@@ -1062,12 +1062,12 @@ void *gl_create_blur_context(backend_t *base, enum blur_method method, void *arg
 			}
 		}
 
-		auto pass = ctx->blur_shader + i;
+		gl_blur_shader_t *pass = ctx->blur_shader + i;
 		size_t shader_len = strlen(FRAG_SHADER_BLUR) + strlen(extension) +
 		                    strlen(shader_body) + 10 /* sum */ +
 		                    1 /* null terminator */;
 		char *shader_str = ccalloc(shader_len, char);
-		auto real_shader_len = snprintf(shader_str, shader_len, FRAG_SHADER_BLUR,
+		int real_shader_len = snprintf(shader_str, shader_len, FRAG_SHADER_BLUR,
 		                                extension, shader_body, sum);
 		CHECK(real_shader_len >= 0);
 		CHECK((size_t)real_shader_len < shader_len);
@@ -1094,7 +1094,7 @@ void *gl_create_blur_context(backend_t *base, enum blur_method method, void *arg
 	if (nkernels == 1) {
 		// Generate an extra null pass so we don't need special code path for
 		// the single pass case
-		auto pass = &ctx->blur_shader[1];
+		gl_blur_shader_t *pass = &ctx->blur_shader[1];
 		pass->prog = gl_create_program_from_str(vertex_shader, dummy_frag);
 		pass->unifm_opacity = -1;
 		pass->orig_loc = glGetUniformLocationChecked(pass->prog, "orig");
@@ -1305,8 +1305,8 @@ static inline void gl_image_decouple(backend_t *base, struct gl_image *img) {
 		return;
 	}
 
-	auto gd = (struct gl_data *)base;
-	auto new_tex = ccalloc(1, struct gl_texture);
+	struct gl_data *gd = (struct gl_data *)base;
+	struct gl_texture *new_tex = ccalloc(1, struct gl_texture);
 
 	new_tex->texture = gl_new_texture(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, new_tex->texture);
@@ -1378,12 +1378,12 @@ static void gl_image_apply_alpha(backend_t *base, struct gl_image *img,
 }
 
 void gl_present(backend_t *base, const region_t *region) {
-	auto gd = (struct gl_data *)base;
+	struct gl_data *gd = (struct gl_data *)base;
 
 	int nrects;
 	const rect_t *rect = pixman_region32_rectangles((region_t *)region, &nrects);
-	auto coord = ccalloc(nrects * 8, GLint);
-	auto indices = ccalloc(nrects * 6, GLuint);
+	GLint *coord = ccalloc(nrects * 8, GLint);
+	GLuint *indices = ccalloc(nrects * 6, GLuint);
 	for (int i = 0; i < nrects; i++) {
 		// clang-format off
 		memcpy(&coord[i * 8],

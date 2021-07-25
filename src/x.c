@@ -53,7 +53,7 @@ winprop_t x_get_prop_with_offset(const session_t *ps, xcb_window_t w, xcb_atom_t
 	    (rtype == XCB_GET_PROPERTY_TYPE_ANY || r->type == rtype) &&
 	    (!rformat || r->format == rformat) &&
 	    (r->format == 8 || r->format == 16 || r->format == 32)) {
-		auto len = xcb_get_property_value_length(r);
+		int len = xcb_get_property_value_length(r);
 		return (winprop_t){
 		    .ptr = xcb_get_property_value(r),
 		    .nitems = (ulong)(len / (r->format / 8)),
@@ -145,11 +145,11 @@ x_get_pictform_for_visual(xcb_connection_t *c, xcb_visualid_t visual) {
 
 static xcb_visualid_t attr_pure x_get_visual_for_pictfmt(xcb_render_query_pict_formats_reply_t *r,
                                                          xcb_render_pictformat_t fmt) {
-	for (auto screen = xcb_render_query_pict_formats_screens_iterator(r); screen.rem;
+	for (xcb_render_pictscreen_iterator_t screen = xcb_render_query_pict_formats_screens_iterator(r); screen.rem;
 	     xcb_render_pictscreen_next(&screen)) {
-		for (auto depth = xcb_render_pictscreen_depths_iterator(screen.data);
+		for (xcb_render_pictdepth_iterator_t depth = xcb_render_pictscreen_depths_iterator(screen.data);
 		     depth.rem; xcb_render_pictdepth_next(&depth)) {
-			for (auto pv = xcb_render_pictdepth_visuals_iterator(depth.data);
+			for (xcb_render_pictvisual_iterator_t pv = xcb_render_pictdepth_visuals_iterator(depth.data);
 			     pv.rem; xcb_render_pictvisual_next(&pv)) {
 				if (pv.data->format == fmt) {
 					return pv.data->visual;
@@ -163,16 +163,16 @@ static xcb_visualid_t attr_pure x_get_visual_for_pictfmt(xcb_render_query_pict_f
 xcb_visualid_t x_get_visual_for_standard(xcb_connection_t *c, xcb_pict_standard_t std) {
 	x_get_server_pictfmts(c);
 
-	auto pictfmt = xcb_render_util_find_standard_format(g_pictfmts, std);
+	xcb_render_pictforminfo_t *pictfmt = xcb_render_util_find_standard_format(g_pictfmts, std);
 
 	return x_get_visual_for_pictfmt(g_pictfmts, pictfmt->id);
 }
 
 int x_get_visual_depth(xcb_connection_t *c, xcb_visualid_t visual) {
-	auto setup = xcb_get_setup(c);
-	for (auto screen = xcb_setup_roots_iterator(setup); screen.rem;
+	const xcb_setup_t *setup = xcb_get_setup(c);
+	for (xcb_screen_iterator_t screen = xcb_setup_roots_iterator(setup); screen.rem;
 	     xcb_screen_next(&screen)) {
-		for (auto depth = xcb_screen_allowed_depths_iterator(screen.data);
+		for (xcb_depth_iterator_t depth = xcb_screen_allowed_depths_iterator(screen.data);
 		     depth.rem; xcb_depth_next(&depth)) {
 			const int len = xcb_depth_visuals_length(depth.data);
 			const xcb_visualtype_t *visuals = xcb_depth_visuals(depth.data);
@@ -226,7 +226,7 @@ x_create_picture_with_standard_and_pixmap(xcb_connection_t *c, xcb_pict_standard
                                           const xcb_render_create_picture_value_list_t *attr) {
 	x_get_server_pictfmts(c);
 
-	auto pictfmt = xcb_render_util_find_standard_format(g_pictfmts, standard);
+	xcb_render_pictforminfo_t *pictfmt = xcb_render_util_find_standard_format(g_pictfmts, standard);
 	assert(pictfmt);
 	return x_create_picture_with_pictfmt_and_pixmap(c, pictfmt, pixmap, valuemask, attr);
 }
@@ -256,7 +256,7 @@ xcb_render_picture_t
 x_create_picture_with_visual(xcb_connection_t *c, xcb_drawable_t d, int w, int h,
                              xcb_visualid_t visual, uint32_t valuemask,
                              const xcb_render_create_picture_value_list_t *attr) {
-	auto pictfmt = x_get_pictform_for_visual(c, visual);
+	const xcb_render_pictforminfo_t *pictfmt = x_get_pictform_for_visual(c, visual);
 	return x_create_picture_with_pictfmt(c, d, w, h, pictfmt, valuemask, attr);
 }
 
@@ -270,7 +270,7 @@ bool x_fetch_region(xcb_connection_t *c, xcb_xfixes_region_t r, pixman_region32_
 	}
 
 	int nrect = xcb_xfixes_fetch_region_rectangles_length(xr);
-	auto b = ccalloc(nrect, pixman_box32_t);
+	pixman_box32_t *b = ccalloc(nrect, pixman_box32_t);
 	xcb_rectangle_t *xrect = xcb_xfixes_fetch_region_rectangles(xr);
 	for (int i = 0; i < nrect; i++) {
 		b[i] = (pixman_box32_t){.x1 = xrect[i].x,
@@ -289,7 +289,7 @@ void x_set_picture_clip_region(xcb_connection_t *c, xcb_render_picture_t pict,
                                const region_t *reg) {
 	int nrects;
 	const rect_t *rects = pixman_region32_rectangles((region_t *)reg, &nrects);
-	auto xrects = ccalloc(nrects, xcb_rectangle_t);
+	xcb_rectangle_t *xrects = ccalloc(nrects, xcb_rectangle_t);
 	for (int i = 0; i < nrects; i++)
 		xrects[i] = (xcb_rectangle_t){
 		    .x = to_i16_checked(rects[i].x1),
@@ -468,7 +468,7 @@ bool x_validate_pixmap(xcb_connection_t *c, xcb_pixmap_t pixmap) {
 		return false;
 	}
 
-	auto r = xcb_get_geometry_reply(c, xcb_get_geometry(c, pixmap), NULL);
+	xcb_get_geometry_reply_t *r = xcb_get_geometry_reply(c, xcb_get_geometry(c, pixmap), NULL);
 	if (!r) {
 		return false;
 	}
@@ -521,7 +521,7 @@ bool x_fence_sync(xcb_connection_t *c, xcb_sync_fence_t f) {
 	// prototype, we need only one fence per screen, but let's stay a bit
 	// cautious right now
 
-	auto e = xcb_request_check(c, xcb_sync_trigger_fence_checked(c, f));
+	xcb_generic_error_t *e = xcb_request_check(c, xcb_sync_trigger_fence_checked(c, f));
 	if (e) {
 		log_error_x_error(e, "Failed to trigger the fence");
 		goto err;
@@ -574,7 +574,7 @@ void x_create_convolution_kernel(const conv *kernel, double center,
 
 	(*ret)->size = kernel->w * kernel->h + 2;
 
-	auto buf = (*ret)->kernel;
+	xcb_render_fixed_t *buf = (*ret)->kernel;
 	buf[0] = DOUBLE_TO_XFIXED(kernel->w);
 	buf[1] = DOUBLE_TO_XFIXED(kernel->h);
 
@@ -600,8 +600,8 @@ void x_create_convolution_kernel(const conv *kernel, double center,
 /// Generate a search criteria for fbconfig from a X visual.
 /// Returns {-1, -1, -1, -1, -1, 0} on failure
 struct xvisual_info x_get_visual_info(xcb_connection_t *c, xcb_visualid_t visual) {
-	auto pictfmt = x_get_pictform_for_visual(c, visual);
-	auto depth = x_get_visual_depth(c, visual);
+	const xcb_render_pictforminfo_t *pictfmt = x_get_pictform_for_visual(c, visual);
+	int depth = x_get_visual_depth(c, visual);
 	if (!pictfmt || depth == -1) {
 		log_error("Invalid visual %#03x", visual);
 		return (struct xvisual_info){-1, -1, -1, -1, -1, 0};

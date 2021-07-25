@@ -44,7 +44,7 @@ safe_isnan(double a) {
 /// Same as assert, but evaluates the expression even in release builds
 #define CHECK(expr)                                                                      \
 	do {                                                                             \
-		auto _ = (expr);                                                         \
+		bool _ = (expr);                                                         \
 		/* make sure the original expression appears in the assertion message */ \
 		assert((CHECK_EXPR(expr), _));                                           \
 		(void)_;                                                                 \
@@ -54,11 +54,11 @@ safe_isnan(double a) {
 /// being always true or false.
 #define ASSERT_IN_RANGE(var, lower, upper)                                               \
 	do {                                                                             \
-		auto __tmp attr_unused = (var);                                          \
+		__typeof__(var) __tmp attr_unused = (var);                                          \
 		_Pragma("GCC diagnostic push");                                          \
 		_Pragma("GCC diagnostic ignored \"-Wtype-limits\"");                     \
-		assert(__tmp >= lower);                                                  \
-		assert(__tmp <= upper);                                                  \
+		assert((int64_t)__tmp >= lower);                                                  \
+		assert((uint64_t)__tmp <= upper);                                                  \
 		_Pragma("GCC diagnostic pop");                                           \
 	} while (0)
 
@@ -66,10 +66,10 @@ safe_isnan(double a) {
 /// being always true or false.
 #define ASSERT_GEQ(var, lower)                                                           \
 	do {                                                                             \
-		auto __tmp attr_unused = (var);                                          \
+		__typeof__(var) __tmp attr_unused = (var);                                          \
 		_Pragma("GCC diagnostic push");                                          \
 		_Pragma("GCC diagnostic ignored \"-Wtype-limits\"");                     \
-		assert(__tmp >= lower);                                                  \
+		assert((int64_t)__tmp >= lower);                                                  \
 		_Pragma("GCC diagnostic pop");                                           \
 	} while (0)
 
@@ -79,38 +79,36 @@ safe_isnan(double a) {
 
 #define to_int_checked(val)                                                              \
 	({                                                                               \
-		int64_t tmp = (val);                                                     \
+		__typeof__(val) tmp = (val);                                                     \
 		ASSERT_IN_RANGE(tmp, INT_MIN, INT_MAX);                                  \
 		(int)tmp;                                                                \
 	})
 
 #define to_char_checked(val)                                                             \
 	({                                                                               \
-		int64_t tmp = (val);                                                     \
+		__typeof__(val) tmp = (val);                                                     \
 		ASSERT_IN_RANGE(tmp, CHAR_MIN, CHAR_MAX);                                \
 		(char)tmp;                                                               \
 	})
 
 #define to_u16_checked(val)                                                              \
 	({                                                                               \
-		auto tmp = (val);                                                        \
+		__typeof__(val) tmp = (val);                                                        \
 		ASSERT_IN_RANGE(tmp, 0, UINT16_MAX);                                     \
 		(uint16_t) tmp;                                                          \
 	})
 
 #define to_i16_checked(val)                                                              \
 	({                                                                               \
-		int64_t tmp = (val);                                                     \
+		__typeof__(val) tmp = (val);                                                     \
 		ASSERT_IN_RANGE(tmp, INT16_MIN, INT16_MAX);                              \
 		(int16_t) tmp;                                                           \
 	})
 
 #define to_u32_checked(val)                                                              \
 	({                                                                               \
-		auto tmp = (val);                                                        \
-		int64_t max attr_unused = UINT32_MAX; /* silence clang tautological      \
-		                                         comparison warning*/            \
-		ASSERT_IN_RANGE(tmp, 0, max);                                            \
+		__typeof__(val) tmp = (val);                                                        \
+		ASSERT_IN_RANGE(tmp, 0, UINT32_MAX);                                            \
 		(uint32_t) tmp;                                                          \
 	})
 /**
@@ -187,7 +185,7 @@ allocchk_(const char *func_name, const char *file, unsigned int line, void *ptr)
 /// @brief Wrapper of calloc().
 #define ccalloc(nmemb, type)                                                             \
 	({                                                                               \
-		auto tmp = (nmemb);                                                      \
+		__typeof__(nmemb) tmp = (nmemb);                                                      \
 		ASSERT_GEQ(tmp, 0);                                                      \
 		((type *)allocchk(calloc((size_t)tmp, sizeof(type))));                   \
 	})
@@ -195,7 +193,7 @@ allocchk_(const char *func_name, const char *file, unsigned int line, void *ptr)
 /// @brief Wrapper of ealloc().
 #define crealloc(ptr, nmemb)                                                               \
 	({                                                                                 \
-		auto tmp = (nmemb);                                                        \
+		__typeof__(nmemb) tmp = (nmemb);                                                        \
 		ASSERT_GEQ(tmp, 0);                                                        \
 		((__typeof__(ptr))allocchk(realloc((ptr), (size_t)tmp * sizeof(*(ptr))))); \
 	})
@@ -231,12 +229,12 @@ allocchk_(const char *func_name, const char *file, unsigned int line, void *ptr)
 		return (type *)ret;                                                      \
 	}                                                                                \
 	Q type *name##_ref(type *a) {                                                    \
-		__auto_type b = (name##_internal_t *)a;                                  \
+		name##_internal_t *b = (name##_internal_t *)a;                                  \
 		b->ref_count++;                                                          \
 		return a;                                                                \
 	}                                                                                \
 	Q void name##_unref(type **a) {                                                  \
-		__auto_type b = (name##_internal_t *)*a;                                 \
+		name##_internal_t *b = (name##_internal_t *)*a;                                 \
 		if (!b)                                                                  \
 			return;                                                          \
 		b->ref_count--;                                                          \

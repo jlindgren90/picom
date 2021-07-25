@@ -143,7 +143,7 @@ wid_set_text_prop(session_t *ps, xcb_window_t wid, xcb_atom_t prop_atom, char *s
  * Dump an drawable's info.
  */
 static inline void dump_drawable(session_t *ps, xcb_drawable_t drawable) {
-	auto r = xcb_get_geometry_reply(ps->c, xcb_get_geometry(ps->c, drawable), NULL);
+	xcb_get_geometry_reply_t *r = xcb_get_geometry_reply(ps->c, xcb_get_geometry(ps->c, drawable), NULL);
 	if (!r) {
 		log_trace("Drawable %#010x: Failed", drawable);
 		return;

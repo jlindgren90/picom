@@ -26,7 +26,7 @@ struct dummy_data {
 };
 
 struct backend_base *dummy_init(struct session *ps attr_unused) {
-	auto ret = (struct backend_base *)ccalloc(1, struct dummy_data);
+	struct backend_base *ret = (struct backend_base *)ccalloc(1, struct dummy_data);
 	ret->c = ps->c;
 	ret->loop = ps->loop;
 	ret->root = ps->root;
@@ -35,7 +35,7 @@ struct backend_base *dummy_init(struct session *ps attr_unused) {
 }
 
 void dummy_deinit(struct backend_base *data) {
-	auto dummy = (struct dummy_data *)data;
+	struct dummy_data *dummy = (struct dummy_data *)data;
 	HASH_ITER2(dummy->images, img) {
 		log_warn("Backend image for pixmap %#010x is not freed", img->pixmap);
 		HASH_DEL(dummy->images, img);
@@ -46,7 +46,7 @@ void dummy_deinit(struct backend_base *data) {
 }
 
 static void dummy_check_image(struct backend_base *base, const struct dummy_image *img) {
-	auto dummy = (struct dummy_data *)base;
+	struct dummy_data *dummy = (struct dummy_data *)base;
 	struct dummy_image *tmp = NULL;
 	HASH_FIND_INT(dummy->images, &img->pixmap, tmp);
 	if (!tmp) {
@@ -74,7 +74,7 @@ bool dummy_blur(struct backend_base *backend_data attr_unused, double opacity at
 
 void *dummy_bind_pixmap(struct backend_base *base, xcb_pixmap_t pixmap,
                         struct xvisual_info fmt, bool owned attr_unused) {
-	auto dummy = (struct dummy_data *)base;
+	struct dummy_data *dummy = (struct dummy_data *)base;
 	struct dummy_image *img = NULL;
 	HASH_FIND_INT(dummy->images, &pixmap, img);
 	if (img) {
@@ -93,8 +93,8 @@ void *dummy_bind_pixmap(struct backend_base *base, xcb_pixmap_t pixmap,
 }
 
 void dummy_release_image(backend_t *base, void *image) {
-	auto dummy = (struct dummy_data *)base;
-	auto img = (struct dummy_image *)image;
+	struct dummy_data *dummy = (struct dummy_data *)base;
+	struct dummy_image *img = (struct dummy_image *)image;
 	assert(*img->refcount > 0);
 	(*img->refcount)--;
 	if (*img->refcount == 0) {
@@ -105,7 +105,7 @@ void dummy_release_image(backend_t *base, void *image) {
 }
 
 bool dummy_is_image_transparent(struct backend_base *base, void *image) {
-	auto img = (struct dummy_image *)image;
+	struct dummy_image *img = (struct dummy_image *)image;
 	dummy_check_image(base, img);
 	return img->transparent;
 }
@@ -123,7 +123,7 @@ bool dummy_image_op(struct backend_base *base, enum image_operations op attr_unu
 
 void *dummy_image_copy(struct backend_base *base, const void *image,
                        const region_t *reg_visible attr_unused) {
-	auto img = (const struct dummy_image *)image;
+	const struct dummy_image *img = (const struct dummy_image *)image;
 	dummy_check_image(base, img);
 	(*img->refcount)++;
 	return (void *)img;

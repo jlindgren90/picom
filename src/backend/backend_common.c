@@ -229,8 +229,8 @@ bool build_shadow(xcb_connection_t *c, xcb_drawable_t d, double opacity, const i
 
 	// We need to make room for protocol metadata in the request. The metadata should
 	// be 24 bytes plus padding, let's be generous and give it 1kb
-	auto maximum_image_size = xcb_get_maximum_request_length(c) * 4 - 1024;
-	auto maximum_row =
+	uint32_t maximum_image_size = xcb_get_maximum_request_length(c) * 4 - 1024;
+	uint16_t maximum_row =
 	    to_u16_checked(clamp(maximum_image_size / shadow_image->stride, 0, UINT16_MAX));
 	if (maximum_row <= 0) {
 		log_error("X server request size limit is too restrictive, or the shadow "
@@ -241,7 +241,7 @@ bool build_shadow(xcb_connection_t *c, xcb_drawable_t d, double opacity, const i
 	}
 
 	for (uint32_t row = 0; row < shadow_image->height; row += maximum_row) {
-		auto batch_height = maximum_row;
+		uint16_t batch_height = maximum_row;
 		if (batch_height > shadow_image->height - row) {
 			batch_height = to_u16_checked(shadow_image->height - row);
 		}
@@ -303,7 +303,7 @@ default_backend_render_shadow(backend_t *backend_data, int width, int height,
 		return NULL;
 	}
 
-	auto visual = x_get_visual_for_standard(backend_data->c, XCB_PICT_STANDARD_ARGB_32);
+	xcb_visualid_t visual = x_get_visual_for_standard(backend_data->c, XCB_PICT_STANDARD_ARGB_32);
 	void *ret = backend_data->ops->bind_pixmap(
 	    backend_data, shadow, x_get_visual_info(backend_data->c, visual), true);
 	xcb_render_free_picture(backend_data->c, pict);
@@ -313,7 +313,7 @@ default_backend_render_shadow(backend_t *backend_data, int width, int height,
 static struct conv **generate_box_blur_kernel(struct box_blur_args *args, int *kernel_count) {
 	int r = args->size * 2 + 1;
 	assert(r > 0);
-	auto ret = ccalloc(2, struct conv *);
+	struct conv **ret = ccalloc(2, struct conv *);
 	ret[0] = cvalloc(sizeof(struct conv) + sizeof(double) * (size_t)r);
 	ret[1] = cvalloc(sizeof(struct conv) + sizeof(double) * (size_t)r);
 	ret[0]->w = r;
@@ -332,7 +332,7 @@ static struct conv **
 generate_gaussian_blur_kernel(struct gaussian_blur_args *args, int *kernel_count) {
 	int r = args->size * 2 + 1;
 	assert(r > 0);
-	auto ret = ccalloc(2, struct conv *);
+	struct conv **ret = ccalloc(2, struct conv *);
 	ret[0] = cvalloc(sizeof(struct conv) + sizeof(double) * (size_t)r);
 	ret[1] = cvalloc(sizeof(struct conv) + sizeof(double) * (size_t)r);
 	ret[0]->w = r;

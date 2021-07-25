@@ -6,7 +6,6 @@
 #include <stdc-predef.h>
 #endif
 
-#define auto           __auto_type
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 #define likely_if(x)   if (likely(x))

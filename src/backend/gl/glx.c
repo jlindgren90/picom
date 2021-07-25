@@ -149,7 +149,7 @@ struct glx_fbconfig_info *glx_find_fbconfig(Display *dpy, int screen, struct xvi
 		return NULL;
 	}
 
-	auto info = cmalloc(struct glx_fbconfig_info);
+	struct glx_fbconfig_info *info = cmalloc(struct glx_fbconfig_info);
 	info->cfg = ret;
 	info->texture_tgts = texture_tgts;
 	info->texture_fmt = texture_fmt;
@@ -205,7 +205,7 @@ void glx_deinit(backend_t *base) {
 }
 
 static void *glx_decouple_user_data(backend_t *base attr_unused, void *ud attr_unused) {
-	auto ret = cmalloc(struct _glx_pixmap);
+	struct _glx_pixmap *ret = cmalloc(struct _glx_pixmap);
 	ret->owned = false;
 	ret->glpixmap = 0;
 	ret->pixmap = 0;
@@ -234,7 +234,7 @@ static bool glx_set_swap_interval(int interval, Display *dpy, GLXDrawable drawab
 static backend_t *glx_init(session_t *ps) {
 	bool success = false;
 	glxext_init(ps->dpy, ps->scr);
-	auto gd = ccalloc(1, struct _glx_data);
+	struct _glx_data *gd = ccalloc(1, struct _glx_data);
 	init_backend_base(&gd->gl.base, ps);
 
 	gd->display = ps->dpy;
@@ -381,21 +381,21 @@ glx_bind_pixmap(backend_t *base, xcb_pixmap_t pixmap, struct xvisual_info fmt, b
 		return false;
 	}
 
-	auto r = xcb_get_geometry_reply(base->c, xcb_get_geometry(base->c, pixmap), NULL);
+	xcb_get_geometry_reply_t *r = xcb_get_geometry_reply(base->c, xcb_get_geometry(base->c, pixmap), NULL);
 	if (!r) {
 		log_error("Invalid pixmap %#010x", pixmap);
 		return NULL;
 	}
 
 	log_trace("Binding pixmap %#010x", pixmap);
-	auto wd = ccalloc(1, struct gl_image);
+	struct gl_image *wd = ccalloc(1, struct gl_image);
 	wd->max_brightness = 1;
 	wd->inner = ccalloc(1, struct gl_texture);
 	wd->inner->width = wd->ewidth = r->width;
 	wd->inner->height = wd->eheight = r->height;
 	free(r);
 
-	auto fbcfg = glx_find_fbconfig(gd->display, gd->screen, fmt);
+	struct glx_fbconfig_info *fbcfg = glx_find_fbconfig(gd->display, gd->screen, fmt);
 	if (!fbcfg) {
 		log_error("Couldn't find FBConfig with requested visual %x", fmt.visual);
 		goto err;
@@ -513,7 +513,7 @@ static inline bool glx_has_extension(Display *dpy, int screen, const char *ext) 
 		return false;
 	}
 
-	auto inlen = strlen(ext);
+	size_t inlen = strlen(ext);
 	const char *curr = glx_exts;
 	bool match = false;
 	while (curr && !match) {

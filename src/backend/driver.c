@@ -17,12 +17,12 @@ enum driver detect_driver(xcb_connection_t *c, backend_t *backend_data, xcb_wind
 	// First we try doing backend agnostic detection using RANDR
 	// There's no way to query the X server about what driver is loaded, so RANDR is
 	// our best shot.
-	auto randr_version = xcb_randr_query_version_reply(
+	xcb_randr_query_version_reply_t *randr_version = xcb_randr_query_version_reply(
 	    c, xcb_randr_query_version(c, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION),
 	    NULL);
 	if (randr_version &&
 	    (randr_version->major_version > 1 || randr_version->minor_version >= 4)) {
-		auto r = xcb_randr_get_providers_reply(
+		xcb_randr_get_providers_reply_t *r = xcb_randr_get_providers_reply(
 		    c, xcb_randr_get_providers(c, window), NULL);
 		if (r == NULL) {
 			log_warn("Failed to get RANDR providers");
@@ -30,9 +30,9 @@ enum driver detect_driver(xcb_connection_t *c, backend_t *backend_data, xcb_wind
 			return 0;
 		}
 
-		auto providers = xcb_randr_get_providers_providers(r);
-		for (auto i = 0; i < xcb_randr_get_providers_providers_length(r); i++) {
-			auto r2 = xcb_randr_get_provider_info_reply(
+		xcb_randr_provider_t *providers = xcb_randr_get_providers_providers(r);
+		for (int i = 0; i < xcb_randr_get_providers_providers_length(r); i++) {
+			xcb_randr_get_provider_info_reply_t *r2 = xcb_randr_get_provider_info_reply(
 			    c, xcb_randr_get_provider_info(c, providers[i], r->timestamp), NULL);
 			if (r2 == NULL) {
 				continue;
@@ -42,9 +42,9 @@ enum driver detect_driver(xcb_connection_t *c, backend_t *backend_data, xcb_wind
 				continue;
 			}
 
-			auto name_len = xcb_randr_get_provider_info_name_length(r2);
+			int name_len = xcb_randr_get_provider_info_name_length(r2);
 			assert(name_len >= 0);
-			auto name =
+			char *name =
 			    strndup(xcb_randr_get_provider_info_name(r2), (size_t)name_len);
 			if (strcasestr(name, "modesetting") != NULL) {
 				ret |= DRIVER_MODESETTING;

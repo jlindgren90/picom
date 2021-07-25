@@ -23,10 +23,10 @@
  * Allocate the space and join two strings.
  */
 char *mstrjoin(const char *src1, const char *src2) {
-	auto len1 = strlen(src1);
-	auto len2 = strlen(src2);
-	auto len = len1 + len2 + 1;
-	auto str = ccalloc(len, char);
+	size_t len1 = strlen(src1);
+	size_t len2 = strlen(src2);
+	size_t len = len1 + len2 + 1;
+	char *str = ccalloc(len, char);
 
 	strncpy(str, src1, len1);
 	strncpy(str + len1, src2, len2);
@@ -58,9 +58,9 @@ void mstrextend(char **psrc1, const char *src2) {
 		return;
 	}
 
-	auto len1 = strlen(*psrc1);
-	auto len2 = strlen(src2);
-	auto len = len1 + len2 + 1;
+	size_t len1 = strlen(*psrc1);
+	size_t len2 = strlen(src2);
+	size_t len = len1 + len2 + 1;
 	*psrc1 = crealloc(*psrc1, len);
 
 	strncpy(*psrc1 + len1, src2, len2);

@@ -69,7 +69,7 @@ static inline bool paint_bind_tex(session_t *ps, paint_t *ppaint, int wid, int h
 		}
 		fbcfg = ps->argb_fbconfig;
 	} else {
-		auto m = x_get_visual_info(ps->c, visual);
+		struct xvisual_info m = x_get_visual_info(ps->c, visual);
 		if (m.visual_depth < 0) {
 			return false;
 		}
@@ -191,7 +191,7 @@ void render(session_t *ps, int x, int y, int dx, int dy, int wid, int hei, doubl
 	switch (ps->o.backend) {
 	case BKEND_XRENDER:
 	case BKEND_XR_GLX_HYBRID: {
-		auto alpha_step = (int)(opacity * MAX_ALPHA);
+		int alpha_step = (int)(opacity * MAX_ALPHA);
 		xcb_render_picture_t alpha_pict = ps->alpha_picts[alpha_step];
 		if (alpha_step != 0) {
 			uint8_t op = ((!argb && !alpha_pict) ? XCB_RENDER_PICT_OP_SRC
@@ -345,10 +345,10 @@ void paint_one(session_t *ps, struct managed_win *w, const region_t *reg_paint) 
 	} else {
 		// Painting parameters
 		const margin_t extents = win_calc_frame_extents(w);
-		const auto t = extents.top;
-		const auto l = extents.left;
-		const auto b = extents.bottom;
-		const auto r = extents.right;
+		const int t = extents.top;
+		const int l = extents.left;
+		const int b = extents.bottom;
+		const int r = extents.right;
 
 #define COMP_BDR(cx, cy, cwid, chei)                                                     \
 	paint_region(ps, w, (cx), (cy), (cwid), (chei), w->frame_opacity * w->opacity,   \
@@ -421,7 +421,7 @@ void paint_one(session_t *ps, struct managed_win *w, const region_t *reg_paint) 
 		switch (ps->o.backend) {
 		case BKEND_XRENDER:
 		case BKEND_XR_GLX_HYBRID: {
-			auto cval = (uint16_t)(0xffff * dim_opacity);
+			uint16_t cval = (uint16_t)(0xffff * dim_opacity);
 
 			// Premultiply color
 			xcb_render_color_t color = {
@@ -694,8 +694,8 @@ win_blur_background(session_t *ps, struct managed_win *w, xcb_render_picture_t t
                     const region_t *reg_paint) {
 	const int16_t x = w->g.x;
 	const int16_t y = w->g.y;
-	const auto wid = to_u16_checked(w->widthb);
-	const auto hei = to_u16_checked(w->heightb);
+	const uint16_t wid = to_u16_checked(w->widthb);
+	const uint16_t hei = to_u16_checked(w->heightb);
 
 	double factor_center = 1.0;
 	// Adjust blur strength according to window opacity, to make it appear
@@ -712,8 +712,8 @@ win_blur_background(session_t *ps, struct managed_win *w, xcb_render_picture_t t
 		for (int i = 0; i < ps->o.blur_kernel_count; i++) {
 			// Note: `x * 65536` converts double `x` to a X fixed point
 			// representation. `x / 65536` is the other way.
-			auto kern_src = ps->o.blur_kerns[i];
-			auto kern_dst = ps->blur_kerns_cache[i];
+			struct conv *kern_src = ps->o.blur_kerns[i];
+			struct x_convolution_kernel *kern_dst = ps->blur_kerns_cache[i];
 
 			assert(!kern_dst || (kern_src->w == kern_dst->kernel[0] / 65536 &&
 			                     kern_src->h == kern_dst->kernel[1] / 65536));
@@ -780,7 +780,7 @@ void paint_all(session_t *ps, struct managed_win *t, bool ignore_damage) {
 		pixman_region32_copy(&region, &ps->screen_reg);
 	} else {
 		for (int i = 0; i < get_buffer_age(ps); i++) {
-			auto curr = ((ps->damage - ps->damage_ring) + i) % ps->ndamage;
+			long curr = ((ps->damage - ps->damage_ring) + i) % ps->ndamage;
 			pixman_region32_union(&region, &region, &ps->damage_ring[curr]);
 		}
 	}
@@ -849,7 +849,7 @@ void paint_all(session_t *ps, struct managed_win *t, bool ignore_damage) {
 	// pixels painted.
 	//
 	// Whether this is beneficial is to be determined XXX
-	for (auto w = t; w; w = w->prev_trans) {
+	for (struct managed_win *w = t; w; w = w->prev_trans) {
 		region_t bshape = win_get_bounding_shape_global_by_val(w);
 		// Painting shadow
 		if (w->shadow) {
@@ -955,8 +955,8 @@ void paint_all(session_t *ps, struct managed_win *t, bool ignore_damage) {
 		ps->vsync_wait(ps);
 	}
 
-	auto rwidth = to_u16_checked(ps->root_width);
-	auto rheight = to_u16_checked(ps->root_height);
+	uint16_t rwidth = to_u16_checked(ps->root_width);
+	uint16_t rheight = to_u16_checked(ps->root_height);
 	switch (ps->o.backend) {
 	case BKEND_XRENDER:
 		if (ps->o.monitor_repaint) {
@@ -966,7 +966,7 @@ void paint_all(session_t *ps, struct managed_win *t, bool ignore_damage) {
 
 			// First we create a new picture, and copy content from the buffer
 			// to it
-			auto pictfmt = x_get_pictform_for_visual(ps->c, ps->vis);
+			const xcb_render_pictforminfo_t *pictfmt = x_get_pictform_for_visual(ps->c, ps->vis);
 			xcb_render_picture_t new_pict = x_create_picture_with_pictfmt(
 			    ps->c, ps->root, rwidth, rheight, pictfmt, 0, NULL);
 			xcb_render_composite(ps->c, XCB_RENDER_PICT_OP_SRC,

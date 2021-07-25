@@ -76,7 +76,7 @@ void *cache_free(struct cache *c) {
 }
 
 struct cache *new_cache(void *ud, cache_getter_t getter, cache_free_t f) {
-	auto c = ccalloc(1, struct cache);
+	struct cache *c = ccalloc(1, struct cache);
 	c->user_data = ud;
 	c->getter = getter;
 	c->free = f;

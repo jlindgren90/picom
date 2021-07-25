@@ -90,7 +90,7 @@ static void cdbus_callback_watch_toggled(DBusWatch *watch, void *data);
  * Initialize D-Bus connection.
  */
 bool cdbus_init(session_t *ps, const char *uniq) {
-	auto cd = cmalloc(struct cdbus_data);
+	struct cdbus_data *cd = cmalloc(struct cdbus_data);
 	cd->dbus_service = NULL;
 
 	// Set ps->dbus_data here because add_watch functions need it
@@ -238,7 +238,7 @@ cdbus_callback_handle_timeout(EV_P attr_unused, ev_timer *w, int revents attr_un
 static dbus_bool_t cdbus_callback_add_timeout(DBusTimeout *timeout, void *data) {
 	session_t *ps = data;
 
-	auto t = ccalloc(1, ev_dbus_timer);
+	ev_dbus_timer *t = ccalloc(1, ev_dbus_timer);
 	double i = dbus_timeout_get_interval(timeout) / 1000.0;
 	ev_timer_init(&t->w, cdbus_callback_handle_timeout, i, i);
 	t->t = timeout;
@@ -322,7 +322,7 @@ static inline int cdbus_get_watch_cond(DBusWatch *watch) {
 static dbus_bool_t cdbus_callback_add_watch(DBusWatch *watch, void *data) {
 	session_t *ps = data;
 
-	auto w = ccalloc(1, ev_dbus_io);
+	ev_dbus_io *w = ccalloc(1, ev_dbus_io);
 	w->dw = watch;
 	w->cd = ps->dbus_data;
 	ev_io_init(&w->w, cdbus_io_callback, dbus_watch_get_unix_fd(watch),
@@ -482,7 +482,7 @@ static bool cdbus_apdarg_wids(session_t *ps, DBusMessage *msg, const void *data 
 	}
 
 	// Allocate memory for an array of window IDs
-	auto arr = ccalloc(count, cdbus_window_t);
+	cdbus_window_t *arr = ccalloc(count, cdbus_window_t);
 
 	// Build the array
 	cdbus_window_t *pcur = arr;
@@ -747,7 +747,7 @@ static bool cdbus_process_win_get(session_t *ps, DBusMessage *msg) {
 		return false;
 	}
 
-	auto w = find_managed_win(ps, wid);
+	struct managed_win *w = find_managed_win(ps, wid);
 
 	if (!w) {
 		log_error("Window %#010x not found.", wid);
@@ -850,7 +850,7 @@ static bool cdbus_process_win_set(session_t *ps, DBusMessage *msg) {
 		return false;
 	}
 
-	auto w = find_managed_win(ps, wid);
+	struct managed_win *w = find_managed_win(ps, wid);
 
 	if (!w) {
 		log_error("Window %#010x not found.", wid);
@@ -927,7 +927,7 @@ static bool cdbus_process_find_win(session_t *ps, DBusMessage *msg) {
 		cdbus_window_t client = XCB_NONE;
 		if (!cdbus_msg_get_arg(msg, 1, CDBUS_TYPE_WINDOW, &client))
 			return false;
-		auto w = find_toplevel(ps, client);
+		struct managed_win *w = find_toplevel(ps, client);
 		if (w) {
 			wid = w->base.id;
 		}

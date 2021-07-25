@@ -125,7 +125,7 @@ static inline void group_on_factor_change(session_t *ps, xcb_window_t leader) {
 		if (!w->managed) {
 			continue;
 		}
-		auto mw = (struct managed_win *)w;
+		struct managed_win *mw = (struct managed_win *)w;
 		if (win_get_leader(ps, mw) == leader) {
 			win_on_factor_change(ps, mw);
 		}
@@ -138,7 +138,7 @@ static inline const char *win_get_name_if_managed(const struct win *w) {
 	if (!w->managed) {
 		return "(unmanaged)";
 	}
-	auto mw = (struct managed_win *)w;
+	struct managed_win *mw = (struct managed_win *)w;
 	return mw->name;
 }
 
@@ -158,7 +158,7 @@ static inline bool group_is_focused(session_t *ps, xcb_window_t leader) {
 		if (!w->managed) {
 			continue;
 		}
-		auto mw = (struct managed_win *)w;
+		struct managed_win *mw = (struct managed_win *)w;
 		if (win_get_leader(ps, mw) == leader && win_is_focused_raw(ps, mw)) {
 			return true;
 		}
@@ -195,8 +195,8 @@ void win_get_region_noframe_local(const struct managed_win *w, region_t *res) {
 
 void win_get_region_frame_local(const struct managed_win *w, region_t *res) {
 	const margin_t extents = win_calc_frame_extents(w);
-	auto outer_width = extents.left + extents.right + w->g.width;
-	auto outer_height = extents.top + extents.bottom + w->g.height;
+	int outer_width = extents.left + extents.right + w->g.width;
+	int outer_height = extents.top + extents.bottom + w->g.height;
 	pixman_region32_fini(res);
 	pixman_region32_init_rects(
 	    res,
@@ -261,8 +261,8 @@ static inline void win_release_shadow(backend_t *base, struct managed_win *w) {
 
 static inline bool win_bind_pixmap(struct backend_base *b, struct managed_win *w) {
 	assert(!w->win_image);
-	auto pixmap = x_new_id(b->c);
-	auto e = xcb_request_check(
+	uint32_t pixmap = x_new_id(b->c);
+	xcb_generic_error_t *e = xcb_request_check(
 	    b->c, xcb_composite_name_window_pixmap_checked(b->c, w->base.id, pixmap));
 	if (e) {
 		log_error("Failed to get named pixmap for window %#010x(%s)", w->base.id,
@@ -397,9 +397,9 @@ static bool attr_pure win_has_rounded_corners(const struct managed_win *w) {
 
 	// Determine the minimum width/height of a rectangle that could mark
 	// a window as having rounded corners
-	auto minwidth =
+	uint16_t minwidth =
 	    (uint16_t)max2(w->widthb * (1 - ROUNDED_PERCENT), w->widthb - ROUNDED_PIXELS);
-	auto minheight =
+	uint16_t minheight =
 	    (uint16_t)max2(w->heightb * (1 - ROUNDED_PERCENT), w->heightb - ROUNDED_PIXELS);
 
 	// Get the rectangles in the bounding region
@@ -991,7 +991,7 @@ void win_mark_client(session_t *ps, struct managed_win *w, xcb_window_t client) 
 	if (w->a.map_state != XCB_MAP_STATE_VIEWABLE)
 		return;
 
-	auto e = xcb_request_check(
+	xcb_generic_error_t *e = xcb_request_check(
 	    ps->c, xcb_change_window_attributes(
 	               ps->c, client, XCB_CW_EVENT_MASK,
 	               (const uint32_t[]){determine_evmask(ps, client, WIN_EVMODE_CLIENT)}));
@@ -1017,7 +1017,7 @@ void win_mark_client(session_t *ps, struct managed_win *w, xcb_window_t client) 
 	// Update everything related to conditions
 	win_on_factor_change(ps, w);
 
-	auto r = xcb_get_window_attributes_reply(
+	xcb_get_window_attributes_reply_t *r = xcb_get_window_attributes_reply(
 	    ps->c, xcb_get_window_attributes(ps->c, w->client_win), &e);
 	if (!r) {
 		log_error_x_error(e, "Failed to get client window attributes");
@@ -1143,7 +1143,7 @@ static struct win *add_win(session_t *ps, xcb_window_t id, struct list_node *pre
 	HASH_FIND_INT(ps->windows, &id, old_w);
 	assert(old_w == NULL);
 
-	auto new_w = cmalloc(struct win);
+	struct win *new_w = cmalloc(struct win);
 	list_insert_after(prev, &new_w->stack_neighbour);
 	new_w->id = id;
 	new_w->managed = false;
@@ -1272,7 +1272,7 @@ struct win *fill_win(session_t *ps, struct win *w) {
 		return w;
 	}
 
-	auto duplicated_win = find_managed_win(ps, w->id);
+	struct managed_win *duplicated_win = find_managed_win(ps, w->id);
 	if (duplicated_win) {
 		log_debug("Window %#010x (recorded name: %s) added multiple times", w->id,
 		          duplicated_win->name);
@@ -1301,8 +1301,8 @@ struct win *fill_win(session_t *ps, struct win *w) {
 	}
 
 	// Allocate and initialize the new win structure
-	auto new_internal = cmalloc(struct managed_win_internal);
-	auto new = (struct managed_win *)new_internal;
+	struct managed_win_internal *new_internal = cmalloc(struct managed_win_internal);
+	struct managed_win *new = (struct managed_win *)new_internal;
 
 	// Fill structure
 	// We only need to initialize the part that are not initialized
@@ -1404,7 +1404,7 @@ static xcb_window_t win_get_leader_raw(session_t *ps, struct managed_win *w, int
 
 		// If the leader of this window isn't itself, look for its ancestors
 		if (w->cache_leader && w->cache_leader != w->client_win) {
-			auto wp = find_toplevel(ps, w->cache_leader);
+			struct managed_win *wp = find_toplevel(ps, w->cache_leader);
 			if (wp) {
 				// Dead loop?
 				if (recursions > WIN_GET_LEADER_MAX_RECURSION)
@@ -1507,7 +1507,7 @@ void win_set_focused(session_t *ps, struct managed_win *w) {
 		return;
 	}
 
-	auto old_active_win = ps->active_win;
+	struct managed_win *old_active_win = ps->active_win;
 	ps->active_win = w;
 	assert(win_is_focused_raw(ps, w));
 
@@ -1684,7 +1684,7 @@ void win_ev_stop(session_t *ps, const struct win *w) {
 		return;
 	}
 
-	auto mw = (struct managed_win *)w;
+	struct managed_win *mw = (struct managed_win *)w;
 	if (mw->client_win) {
 		xcb_change_window_attributes(ps->c, mw->client_win, XCB_CW_EVENT_MASK,
 		                             (const uint32_t[]){0});
@@ -1722,11 +1722,11 @@ static void unmap_win_finish(session_t *ps, struct managed_win *w) {
 static void destroy_win_finish(session_t *ps, struct win *w) {
 	log_trace("Trying to finish destroying (%#010x)", w->id);
 
-	auto next_w = win_stack_find_next_managed(ps, &w->stack_neighbour);
+	struct managed_win *next_w = win_stack_find_next_managed(ps, &w->stack_neighbour);
 	list_remove(&w->stack_neighbour);
 
 	if (w->managed) {
-		auto mw = (struct managed_win *)w;
+		struct managed_win *mw = (struct managed_win *)w;
 
 		if (mw->state != WSTATE_UNMAPPED) {
 			// Only UNMAPPED state has window resources freed, otherwise
@@ -1792,7 +1792,7 @@ static inline void restack_win(session_t *ps, struct win *w, struct list_node *n
 		rc_region_unref(&mw->reg_ignore);
 
 		// This invalidates all reg_ignore below the old stack position of `w`
-		auto next_w = win_stack_find_next_managed(ps, &w->stack_neighbour);
+		struct managed_win *next_w = win_stack_find_next_managed(ps, &w->stack_neighbour);
 		if (next_w) {
 			next_w->reg_ignore_valid = false;
 			rc_region_unref(&next_w->reg_ignore);
@@ -1867,7 +1867,7 @@ void restack_top(session_t *ps, struct win *w) {
 ///
 /// @return whether the window has finished destroying and is freed
 bool destroy_win_start(session_t *ps, struct win *w) {
-	auto mw = (struct managed_win *)w;
+	struct managed_win *mw = (struct managed_win *)w;
 	assert(w);
 
 	log_debug("Destroying %#010x \"%s\", managed = %d", w->id,
@@ -2016,7 +2016,7 @@ void win_update_screen(session_t *ps, struct managed_win *w) {
 	w->xinerama_scr = -1;
 
 	for (int i = 0; i < ps->xinerama_nscrs; i++) {
-		auto e = pixman_region32_extents(&ps->xinerama_scr_regs[i]);
+		pixman_box32_t *e = pixman_region32_extents(&ps->xinerama_scr_regs[i]);
 		if (e->x1 <= w->g.x && e->y1 <= w->g.y && e->x2 >= w->g.x + w->widthb &&
 		    e->y2 >= w->g.y + w->heightb) {
 			w->xinerama_scr = i;
@@ -2169,7 +2169,7 @@ void map_win_start(session_t *ps, struct managed_win *w) {
  * Update target window opacity depending on the current state.
  */
 void win_update_opacity_target(session_t *ps, struct managed_win *w) {
-	auto opacity_target_old = w->opacity_target;
+	double opacity_target_old = w->opacity_target;
 	w->opacity_target = win_calc_opacity_target(ps, w);
 
 	if (opacity_target_old == w->opacity_target) {
@@ -2242,7 +2242,7 @@ struct managed_win *find_managed_win(session_t *ps, xcb_window_t id) {
 		return NULL;
 	}
 
-	auto mw = (struct managed_win *)w;
+	struct managed_win *mw = (struct managed_win *)w;
 	assert(mw->state != WSTATE_DESTROYING);
 	return mw;
 }
@@ -2264,7 +2264,7 @@ struct managed_win *find_toplevel(session_t *ps, xcb_window_t id) {
 			continue;
 		}
 
-		auto mw = (struct managed_win *)w;
+		struct managed_win *mw = (struct managed_win *)w;
 		if (mw->client_win == id) {
 			return mw;
 		}
@@ -2292,7 +2292,7 @@ struct managed_win *find_managed_window_or_parent(session_t *ps, xcb_window_t wi
 		// xcb_query_tree probably fails if you run picom when X is somehow
 		// initializing (like add it in .xinitrc). In this case
 		// just leave it alone.
-		auto reply = xcb_query_tree_reply(ps->c, xcb_query_tree(ps->c, wid), NULL);
+		xcb_query_tree_reply_t *reply = xcb_query_tree_reply(ps->c, xcb_query_tree(ps->c, wid), NULL);
 		if (reply == NULL) {
 			break;
 		}
@@ -2392,7 +2392,7 @@ bool win_is_fullscreen(const session_t *ps, const struct managed_win *w) {
 bool win_is_bypassing_compositor(const session_t *ps, const struct managed_win *w) {
 	bool ret = false;
 
-	auto prop = x_get_prop(ps, w->client_win, ps->atoms->a_NET_WM_BYPASS_COMPOSITOR,
+	winprop_t prop = x_get_prop(ps, w->client_win, ps->atoms->a_NET_WM_BYPASS_COMPOSITOR,
 	                       1L, XCB_ATOM_CARDINAL, 32);
 
 	if (prop.nitems && *prop.c32 == 1) {
@@ -2414,7 +2414,7 @@ bool win_is_focused_raw(const session_t *ps, const struct managed_win *w) {
 struct managed_win *
 win_stack_find_next_managed(const session_t *ps, const struct list_node *i) {
 	while (!list_node_is_last(&ps->window_stack, i)) {
-		auto next = list_entry(i->next, struct win, stack_neighbour);
+		struct win *next = list_entry(i->next, struct win, stack_neighbour);
 		if (next->managed) {
 			return (struct managed_win *)next;
 		}

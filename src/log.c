@@ -92,7 +92,7 @@ enum log_level string_to_log_level(const char *str) {
 }
 
 struct log *log_new(void) {
-	auto ret = cmalloc(struct log);
+	struct log *ret = cmalloc(struct log);
 	ret->log_level = LOG_LEVEL_WARN;
 	ret->head = NULL;
 	return ret;
@@ -124,7 +124,7 @@ void log_destroy(struct log *l) {
 	// free all tgt
 	struct log_target *head = l->head;
 	while (head) {
-		auto next = head->next;
+		struct log_target *next = head->next;
 		head->ops->destroy(head);
 		head = next;
 	}
@@ -159,8 +159,8 @@ attr_printf(4, 5) void log_printf(struct log *l, int level, const char *func,
 	}
 
 	struct timespec ts;
-	timespec_get(&ts, TIME_UTC);
-	auto tm = localtime(&ts.tv_sec);
+	clock_gettime(CLOCK_REALTIME, &ts);
+	struct tm *tm = localtime(&ts.tv_sec);
 	char time_buf[100];
 	strftime(time_buf, sizeof time_buf, "%x %T", tm);
 
@@ -248,18 +248,18 @@ struct file_logger {
 };
 
 static void file_logger_write(struct log_target *tgt, const char *str, size_t len) {
-	auto f = (struct file_logger *)tgt;
+	struct file_logger *f = (struct file_logger *)tgt;
 	fwrite(str, 1, len, f->f);
 }
 
 static void file_logger_writev(struct log_target *tgt, const struct iovec *vec, int vcnt) {
-	auto f = (struct file_logger *)tgt;
+	struct file_logger *f = (struct file_logger *)tgt;
 	fflush(f->f);
 	writev(fileno(f->f), vec, vcnt);
 }
 
 static void file_logger_destroy(struct log_target *tgt) {
-	auto f = (struct file_logger *)tgt;
+	struct file_logger *f = (struct file_logger *)tgt;
 	fclose(f->f);
 	free(tgt);
 }
@@ -294,7 +294,7 @@ struct log_target *file_logger_new(const char *filename) {
 		return NULL;
 	}
 
-	auto ret = cmalloc(struct file_logger);
+	struct file_logger *ret = cmalloc(struct file_logger);
 	ret->tgt.ops = &ret->ops;
 	ret->f = f;
 
@@ -315,7 +315,7 @@ struct log_target *stderr_logger_new(void) {
 		return NULL;
 	}
 
-	auto ret = cmalloc(struct file_logger);
+	struct file_logger *ret = cmalloc(struct file_logger);
 	ret->tgt.ops = &ret->ops;
 	ret->f = f;
 	ret->ops = file_logger_ops;
@@ -337,7 +337,7 @@ struct gl_string_marker_logger {
 
 static void
 gl_string_marker_logger_write(struct log_target *tgt, const char *str, size_t len) {
-	auto g = (struct gl_string_marker_logger *)tgt;
+	struct gl_string_marker_logger *g = (struct gl_string_marker_logger *)tgt;
 	g->gl_string_marker((GLsizei)len, str);
 }
 
@@ -356,7 +356,7 @@ struct log_target *gl_string_marker_logger_new(void) {
 	if (!fnptr)
 		return NULL;
 
-	auto ret = cmalloc(struct gl_string_marker_logger);
+	struct gl_string_marker_logger *ret = cmalloc(struct gl_string_marker_logger);
 	ret->tgt.ops = &gl_string_marker_logger_ops;
 	ret->gl_string_marker = fnptr;
 	return &ret->tgt;

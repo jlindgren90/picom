@@ -358,7 +358,7 @@ c2_lptr_t *c2_parse(c2_lptr_t **pcondlst, const char *pattern, void *data) {
 	// Insert to pcondlst
 	{
 		static const c2_lptr_t lptr_def = C2_LPTR_INIT;
-		auto plptr = cmalloc(c2_lptr_t);
+		c2_lptr_t *plptr = cmalloc(c2_lptr_t);
 		memcpy(plptr, &lptr_def, sizeof(c2_lptr_t));
 		plptr->ptr = result;
 		plptr->data = data;
@@ -855,7 +855,7 @@ static int c2_parse_pattern(const char *pattern, int offset, c2_ptr_t *presult) 
 		// We can't determine the length of the pattern, so we use the length
 		// to the end of the pattern string -- currently escape sequences
 		// cannot be converted to a string longer than itself.
-		auto tptnstr = ccalloc((strlen(pattern + offset) + 1), char);
+		char *tptnstr = ccalloc((strlen(pattern + offset) + 1), char);
 		char *ptptnstr = tptnstr;
 		pleaf->ptnstr = tptnstr;
 		for (; pattern[offset] && delim != pattern[offset]; ++offset) {
@@ -940,7 +940,7 @@ static int c2_parse_legacy(const char *pattern, int offset, c2_ptr_t *presult) {
 	}
 
 	// Allocate memory for new leaf
-	auto pleaf = cmalloc(c2_l_t);
+	c2_l_t *pleaf = cmalloc(c2_l_t);
 	presult->isbranch = false;
 	presult->l = pleaf;
 	memcpy(pleaf, &leaf_def, sizeof(c2_l_t));
@@ -1023,7 +1023,7 @@ static bool c2_l_postprocess(session_t *ps, c2_l_t *pleaf) {
 			}
 		}
 		if (!found) {
-			auto pnew = cmalloc(latom_t);
+			latom_t *pnew = cmalloc(latom_t);
 			pnew->next = ps->track_atom_lst;
 			pnew->atom = pleaf->tgtatom;
 			ps->track_atom_lst = pnew;

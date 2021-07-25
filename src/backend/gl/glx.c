@@ -68,7 +68,9 @@ struct glx_fbconfig_info *glx_find_fbconfig(Display *dpy, int screen, struct xvi
 	                          GLX_DRAWABLE_TYPE, GLX_PIXMAP_BIT,
 	                          GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
 	                          GLX_X_RENDERABLE, true,
+#if 0 // old glx
 	                          GLX_FRAMEBUFFER_SRGB_CAPABLE_EXT, (GLint)GLX_DONT_CARE,
+#endif
 	                          GLX_BUFFER_SIZE, m.red_size + m.green_size +
 	                                           m.blue_size + m.alpha_size,
 	                          GLX_RED_SIZE, m.red_size,
@@ -112,6 +114,7 @@ struct glx_fbconfig_info *glx_find_fbconfig(Display *dpy, int screen, struct xvi
 			continue;
 		}
 
+#if 0 // old glx
 		int visual;
 		glXGetFBConfigAttribChecked(dpy, cfg[i], GLX_VISUAL_ID, &visual);
 		if (m.visual_depth != -1 &&
@@ -125,6 +128,7 @@ struct glx_fbconfig_info *glx_find_fbconfig(Display *dpy, int screen, struct xvi
 			// still cannot use it.
 			continue;
 		}
+#endif
 
 		// All check passed, we are using this one.
 		found = true;

@@ -2401,7 +2401,7 @@ int main(int argc, char **argv) {
 	}
 
 	// Main loop
-	bool quit = false;
+	bool quitting = false;
 	int ret_code = 0;
 	char *pid_file = NULL;
 
@@ -2445,8 +2445,8 @@ int main(int argc, char **argv) {
 			need_fork = false;
 		}
 		session_run(ps_g);
-		quit = ps_g->quit;
-		if (quit && ps_g->o.write_pid_path) {
+		quitting = ps_g->quit;
+		if (quitting && ps_g->o.write_pid_path) {
 			pid_file = strdup(ps_g->o.write_pid_path);
 		}
 		session_destroy(ps_g);
@@ -2455,7 +2455,7 @@ int main(int argc, char **argv) {
 		if (dpy) {
 			XCloseDisplay(dpy);
 		}
-	} while (!quit);
+	} while (!quitting);
 
 	free(config_file);
 	if (pid_file) {
